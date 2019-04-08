@@ -47,7 +47,21 @@ def harvest_carbonite(units):
             '''
             for dir in directions:
                 if gc.can_harvest(unit.id, dir):
-                    a = gc.can_harvest(unit.id, dir)
+                    gc.harvest(unit.id, dir)
+
+def attack(units):
+    for unit in units:
+        if unit.unit_type != bc.UnitType.Knight:
+            continue
+        location = unit.location
+        if location.is_on_map():
+            nearby = gc.sense_nearby_units(location.map_location(), 2)
+            for other in nearby:
+                if other.team != unit.team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, other.id):
+                    print('attacked a thing!')
+                    gc.attack(unit.id, other.id)
+                    continue
+
 
 
 
@@ -87,6 +101,7 @@ while True:
         build_factories(units)
         harvest_carbonite(units)
         build_units(units)
+        attack(units)
         move_randomly(units)
     except Exception as e:
         print('Error:', e)
