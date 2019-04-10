@@ -3,12 +3,16 @@ import random
 import sys
 import traceback
 import time
+import astar
 
 gc = bc.GameController()
 gc.queue_research(bc.UnitType.Worker)
-gc.queue_research(bc.UnitType.Rocket)
 gc.queue_research(bc.UnitType.Knight)
 directions = list(bc.Direction)
+karbonite_map = []
+enemy_unit_map = []
+terrain_map = []
+
 
 random.seed(10)
 
@@ -85,6 +89,7 @@ def build_units(units):
             print('produced a unit!')
             continue
 
+
 def move_randomly(units):
 
     for unit in units:
@@ -92,21 +97,36 @@ def move_randomly(units):
         if gc.is_move_ready(unit.id) and gc.can_move(unit.id, d):
             gc.move_robot(unit.id, d)
 
+def init_maps():
+    map = gc.starting_map(gc.planet())
+    print(map.height, map.width)
+    for x in range(map.width):
+        karbonite_map.append([])
+        terrain_map.append([])
+        for y in range(map.height):
+            loc = bc.MapLocation(gc.planet(),x,y)
+            karbonite_map[x].append(map.initial_karbonite_at(loc))
+            terrain_map[x].append(map.is_passable_terrain_at(loc))
 
 
+if gc.planet() == bc.Planet.Earth:
+    init_maps()
+    #print(Astar.astar(terrain_map, bc.MapLocation(gc.planet(),0,0),bc.MapLocation(gc.planet(),32,49)))
 while True:
-    try:
-        units = gc.my_units()
-
-        build_factories(units)
-        harvest_carbonite(units)
-        build_units(units)
-        attack(units)
-        move_randomly(units)
-    except Exception as e:
-        print('Error:', e)
-        # use this to show where the error was
-        traceback.print_exc()
-    gc.next_turn()
-    sys.stdout.flush()
-    sys.stderr.flush()
+    if gc.planet() == bc.Planet.Mars:
+        gc.next_turn()
+    else:
+        try:
+            units = gc.my_units()
+            build_factories(units)
+            harvest_carbonite(units)
+            build_units(units)
+            attack(units)
+            move_randomly(units)
+        except Exception as e:
+            print('Error:', e)
+            # use this to show where the error was
+            traceback.print_exc()
+        gc.next_turn()
+        sys.stdout.flush()
+        sys.stderr.flush()
