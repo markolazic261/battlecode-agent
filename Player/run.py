@@ -4,6 +4,7 @@ import sys
 import traceback
 import time
 import astar
+import units as u
 
 gc = bc.GameController()
 gc.queue_research(bc.UnitType.Worker)
@@ -18,6 +19,7 @@ my_team = gc.team()
 enemy_team = bc.Team.Red if my_team == bc.Team.Blue else bc.Team.Blue
 map_height = gc.starting_map(gc.planet()).height
 map_width = gc.starting_map(gc.planet()).width
+my_units = []
 
 random.seed(10)
 
@@ -26,6 +28,7 @@ def build_factories(units):
     for unit in units:
         if unit.unit_type != bc.UnitType.Worker:
             continue
+        '''
         location = unit.location
         if location.is_on_map():
             nearby = gc.sense_nearby_units(location.map_location(), 2)
@@ -34,6 +37,7 @@ def build_factories(units):
                     gc.build(unit.id, other.id)
                     print('built a factory!')
                     continue
+        '''
         for d in directions:
             if gc.karbonite() > bc.UnitType.Factory.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
                 gc.blueprint(unit.id, bc.UnitType.Factory, d)
@@ -121,6 +125,12 @@ def move_randomly(units):
         if gc.is_move_ready(unit.id) and gc.can_move(unit.id, d):
             gc.move_robot(unit.id, d)
 
+
+def init_workers():
+    units = gc.my_units()
+    for unit in units:
+        my_units.append(u.Worker(unit,gc,{}))
+
 def init_maps():
     map = gc.starting_map(gc.planet())
     for x in range(map_width):
@@ -138,6 +148,7 @@ def init_maps():
 
 if gc.planet() == bc.Planet.Earth:
     init_maps()
+    init_workers()
     #print(astar.astar(terrain_map,my_units_map,bc.MapLocation(gc.planet(),0,0),bc.MapLocation(gc.planet(),32,49)))
 while True:
     if gc.planet() == bc.Planet.Mars:
@@ -147,6 +158,8 @@ while True:
             units = gc.my_units()
             update_enemy_units_map(units)
             build_factories(units)
+            for unit in my_units:
+                unit.run()
             harvest_carbonite(units)
             build_units(units)
             attack(units)
