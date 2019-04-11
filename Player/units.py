@@ -69,13 +69,16 @@ class Worker(Unit):
 
         def condition(self):
             # Already has a factory that it is building on
-            if self.__outer._blueprint_to_build_on:
+            if self.__outer._blueprint_to_build_on and self.__outer._gc.can_build(self.__outer._unit.id, self.__outer._blueprint_to_build_on.id) :
                 return True
+            else:
+                self.__outer._blueprint_to_build_on = None
+
 
             # Look for factories that are not built yet
             location = self.__outer._unit.location
             if location.is_on_map():
-                nearby_factories = self.__outer._gc.sense_nearby_units_by_type(location, 2, bc.UnityType.Factory)
+                nearby_factories = self.__outer._gc.sense_nearby_units_by_type(location.map_location(), 2, bc.UnitType.Factory)
                 for factory in nearby_factories:
                     if self.__outer._gc.can_build(self.__outer._unit.id, factory.id):
                         # Found factory

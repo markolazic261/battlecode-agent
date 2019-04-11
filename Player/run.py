@@ -71,7 +71,6 @@ def attack(units):
             nearby = gc.sense_nearby_units(location.map_location(), 2)
             for other in nearby:
                 if other.team != unit.team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, other.id):
-                    print('attacked a thing!')
                     gc.attack(unit.id, other.id)
                     continue
 
@@ -117,13 +116,14 @@ def update_enemy_units_map(units):
                 map_location = enemy.location.map_location()
                 enemy_units_map[map_location.x][map_location.y] = unit
 
-
-
 def move_randomly(units):
     for unit in units:
         d = random.choice(directions)
         if gc.is_move_ready(unit.id) and gc.can_move(unit.id, d):
+            if unit.unit_type == bc.UnitType.Worker:
+                continue
             gc.move_robot(unit.id, d)
+
 
 
 def init_workers():
