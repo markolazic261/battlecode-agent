@@ -73,7 +73,7 @@ class Worker(Unit):
                 return True
 
             # Look for factories that are not built yet
-            location = self._unit.location
+            location = self.__outer._unit.location
             if location.is_on_map():
                 nearby_factories = self.__outer._gc.sense_nearby_units_by_type(location, 2, bc.UnityType.Factory)
                 for factory in nearby_factories:
