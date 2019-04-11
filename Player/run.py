@@ -11,8 +11,12 @@ gc.queue_research(bc.UnitType.Knight)
 directions = list(bc.Direction)
 karbonite_map = []
 enemy_unit_map = []
+unit_map = []
 terrain_map = []
-
+my_team = gc.team()
+enemy_team = bc.Team.Red if my_team == bc.Team.Blue else bc.Team.Blue
+map_height = gc.starting_map(gc.planet()).height
+map_width = gc.starting_map(gc.planet()).width
 
 random.seed(10)
 
@@ -66,11 +70,6 @@ def attack(units):
                     gc.attack(unit.id, other.id)
                     continue
 
-
-
-
-
-
 def build_units(units):
     for unit in units:
         if unit.unit_type != bc.UnitType.Factory:
@@ -90,8 +89,21 @@ def build_units(units):
             continue
 
 
-def move_randomly(units):
+def update_enemy_units_map(units):
+    for x in range(map_width):
+        for y in range(map_height):
+            enemy_unit_map[x][y] = None
+    for unit in units:
+        location = unit.location
+        if location.is_on_map():
+            nearby = gc.sense_nearby_units_by_team(location.map_location(), unit.vision_range, enemy_team)
+            for enemy in nearby:
+                map_location = enemy.location.map_location()
+                enemy_unit_map[map_location.x][map_location.y] = unit
 
+
+
+def move_randomly(units):
     for unit in units:
         d = random.choice(directions)
         if gc.is_move_ready(unit.id) and gc.can_move(unit.id, d):
@@ -99,18 +111,20 @@ def move_randomly(units):
 
 def init_maps():
     map = gc.starting_map(gc.planet())
-    print(map.height, map.width)
-    for x in range(map.width):
+    for x in range(map_width):
         karbonite_map.append([])
         terrain_map.append([])
-        for y in range(map.height):
+        enemy_unit_map.append([])
+        for y in range(map_height):
             loc = bc.MapLocation(gc.planet(),x,y)
             karbonite_map[x].append(map.initial_karbonite_at(loc))
             terrain_map[x].append(map.is_passable_terrain_at(loc))
+            enemy_unit_map[x].append(None)
 
 
 if gc.planet() == bc.Planet.Earth:
     init_maps()
+    print(my_team, enemy_team)
     #print(Astar.astar(terrain_map, bc.MapLocation(gc.planet(),0,0),bc.MapLocation(gc.planet(),32,49)))
 while True:
     if gc.planet() == bc.Planet.Mars:
@@ -118,6 +132,7 @@ while True:
     else:
         try:
             units = gc.my_units()
+            update_enemy_units_map(units)
             build_factories(units)
             harvest_carbonite(units)
             build_units(units)
