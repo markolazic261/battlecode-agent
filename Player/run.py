@@ -92,7 +92,8 @@ def build_units(units):
 def update_enemy_units_map(units):
     for x in range(map_width):
         for y in range(map_height):
-            enemy_unit_map[x][y] = None
+            if enemy_unit_map[x][y] and enemy_unit_map[x][y].unit_type != bc.UnitType.Factory:
+                enemy_unit_map[x][y] = None
     for unit in units:
         location = unit.location
         if location.is_on_map():
