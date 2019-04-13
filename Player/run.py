@@ -23,45 +23,6 @@ my_units = []
 
 random.seed(10)
 
-
-def build_factories(units):
-    for unit in units:
-        if unit.unit_type != bc.UnitType.Worker:
-            continue
-        '''
-        location = unit.location
-        if location.is_on_map():
-            nearby = gc.sense_nearby_units(location.map_location(), 2)
-            for other in nearby:
-                if gc.can_build(unit.id, other.id):
-                    gc.build(unit.id, other.id)
-                    print('built a factory!')
-                    continue
-        '''
-        for d in directions:
-            if gc.karbonite() > bc.UnitType.Factory.blueprint_cost() and gc.can_blueprint(unit.id, bc.UnitType.Factory, d):
-                gc.blueprint(unit.id, bc.UnitType.Factory, d)
-
-def harvest_carbonite(units):
-    for unit in units:
-        if unit.unit_type != bc.UnitType.Worker:
-            continue
-        location = unit.location
-        if location.is_on_map():
-            '''
-            nearby_locations = gc.all_locations_within(location.map_location(), 2)
-            best_location = location
-            most_karbonite = 0
-            for loc in nearby_locations:
-                karbonite_at_loc =  gc.karbonite_at(loc.map_location())
-                if karbonite_at_loc > most_karbonite:
-                    most_karbonite = karbonite_at_loc
-                    best_location = loc.map_location()
-            '''
-            for dir in directions:
-                if gc.can_harvest(unit.id, dir):
-                    gc.harvest(unit.id, dir)
-
 def attack(units):
     for unit in units:
         if unit.unit_type != bc.UnitType.Knight:
@@ -84,12 +45,10 @@ def build_units(units):
         if len(garrison) > 0:
             d = random.choice(directions)
             if gc.can_unload(unit.id, d):
-                print('unloaded a unit!')
                 gc.unload(unit.id, d)
                 continue
         elif gc.can_produce_robot(unit.id, bc.UnitType.Knight):
             gc.produce_robot(unit.id, bc.UnitType.Knight)
-            print('produced a unit!')
             continue
 
 
@@ -157,10 +116,8 @@ while True:
         try:
             units = gc.my_units()
             update_enemy_units_map(units)
-            build_factories(units)
             for unit in my_units:
                 unit.run()
-            harvest_carbonite(units)
             build_units(units)
             attack(units)
             move_randomly(units)
