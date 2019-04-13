@@ -5,6 +5,7 @@ import traceback
 import time
 import astar
 import units as u
+import strategy
 
 gc = bc.GameController()
 gc.queue_research(bc.UnitType.Worker)
@@ -17,6 +18,7 @@ unit_map = []
 terrain_map = []
 my_team = gc.team()
 enemy_team = bc.Team.Red if my_team == bc.Team.Blue else bc.Team.Blue
+strategy = strategy.Strategy()
 map_height = gc.starting_map(gc.planet()).height
 map_width = gc.starting_map(gc.planet()).width
 my_units = []
@@ -56,7 +58,9 @@ def update_my_units_map(units):
     for x in range(map_width):
         for y in range(map_height):
             my_units_map[x][y] = None
+    strategy.getInstance().resetCurrentUnits()
     for unit in units:
+        strategy.getInstance().addUnit(unit.unit_type)
         location = unit.location
         if location.is_on_map():
             map_location = location.map_location()
@@ -116,6 +120,7 @@ while True:
         try:
             units = gc.my_units()
             update_enemy_units_map(units)
+            update_my_units_map(units)
             for unit in my_units:
                 unit.run()
             build_units(units)

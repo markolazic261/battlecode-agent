@@ -2,6 +2,7 @@ import battlecode as bc
 from abc import ABC, abstractmethod
 import behaviour_tree as bt
 import random
+import strategy
 
 class Unit(ABC):
     """An abstract class container for units. Contains the tree for the unit
@@ -106,7 +107,6 @@ class Worker(Unit):
                 if self.__outer._gc.can_harvest(self.__outer._unit.id, dir):
                     self.__outer._gc.harvest(self.__outer._unit.id, dir)
                     karbonite_harvested = True
-                    print("HARVESTED")
                     break
             if karbonite_harvested:
                 self._status = bt.Status.SUCCESS
@@ -121,8 +121,7 @@ class Worker(Unit):
             self.__outer = outer
 
         def condition(self):
-            # TODO: Implement logic to determine this
-            return True
+            return strategy.Strategy.getInstance().nr_factories < strategy.Strategy.getInstance().max_factories
 
     class EnoughtKarboniteToBuild(bt.Condition):
         """Determines if we have enought karbonite to build a factory"""
