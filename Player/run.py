@@ -74,10 +74,17 @@ def update_enemy_units_map(units):
     for unit in units:
         location = unit.location
         if location.is_on_map():
+            update_karbonite_map(location, unit.vision_range)
             nearby = gc.sense_nearby_units_by_team(location.map_location(), unit.vision_range, enemy_team)
             for enemy in nearby:
                 map_location = enemy.location.map_location()
                 enemy_units_map[map_location.x][map_location.y] = unit
+
+def update_karbonite_map(unit_location, range):
+    locations = gc.all_locations_within(unit_location.map_location(), range)
+    for map_location in locations:
+        karbonite_map[map_location.x][map_location.y] = gc.karbonite_at(map_location)
+
 
 def move_randomly(units):
     for unit in units:
@@ -92,7 +99,7 @@ def move_randomly(units):
 def init_workers():
     units = gc.my_units()
     for unit in units:
-        my_units.append(u.Worker(unit,gc,{}))
+        my_units.append(u.Worker(unit,gc,{"karbonite_map": karbonite_map, "terrain_map": terrain_map, "my_units_map": my_units_map}))
 
 def init_maps():
     map = gc.starting_map(gc.planet())
@@ -112,7 +119,6 @@ def init_maps():
 if gc.planet() == bc.Planet.Earth:
     init_maps()
     init_workers()
-    #print(astar.astar(terrain_map,my_units_map,bc.MapLocation(gc.planet(),0,0),bc.MapLocation(gc.planet(),32,49)))
 while True:
     if gc.planet() == bc.Planet.Mars:
         gc.next_turn()
@@ -126,10 +132,11 @@ while True:
             build_units(units)
             attack(units)
             move_randomly(units)
+            gc.next_turn()
         except Exception as e:
             print('Error:', e)
             # use this to show where the error was
             traceback.print_exc()
-        gc.next_turn()
+        #gc.next_turn()
         sys.stdout.flush()
         sys.stderr.flush()

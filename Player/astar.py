@@ -21,6 +21,8 @@ class Node():
 def astar(maze,friendly_units, start, end):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
 
+
+    print('astaring', start, end, maze[start.x][start.y], maze[end.x][end.y])
     # Create start and end node
     start_node = Node(None, start)
     start_node.g = start_node.h = start_node.f = 0
