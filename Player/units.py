@@ -33,7 +33,7 @@ class Worker(Unit):
         self._blueprint_to_build_on = None
         self._karbonite_to_mine = None
         self._path_to_follow = None
-        self._neighby_karbonite_locations = []
+        self._nearby_karbonite_locations = []
 
     def generate_tree(self):
         """Generates the tree for the worker."""
@@ -68,24 +68,24 @@ class Worker(Unit):
         adjacent_karbonite_sequence = bt.Sequence()
         adjacent_karbonite_sequence.add_child(self.KarboniteInAdjacentCell(self))
         adjacent_karbonite_sequence.add_child(self.HarvestKarbonite(self))
-        #no_adj_karbonite_sequence = bt.Sequence()
-        #no_adj_karbonite_sequence.add_child(self.KarboniteExists(self))
-        #path_fallback = bt.FallBack()
-        #path_following_sequence = bt.Sequence()
-        #path_following_sequence.add_child(self.ExistPath(self))
-        #path_following_sequence.add_child(self.MoveOnPath(self))
-        #create_path_fallback = bt.FallBack()
-        #create_path_sequence = bt.Sequence()
-        #create_path_sequence.add_child(self.NeighbyKarboniteCells(self))
-        #create_path_sequence.add_child(self.CreatePath(self))
-        #create_path_fallback.add_child(create_path_sequence)
-        #create_path_fallback.add_child(self.FindNeighbyKarboniteCells(self))
-        #path_fallback.add_child(path_following_sequence)
-        #path_fallback.add_child(create_path_fallback)
-        #no_adj_karbonite_sequence.add_child(path_fallback)
+        no_adj_karbonite_sequence = bt.Sequence()
+        no_adj_karbonite_sequence.add_child(self.KarboniteExists(self))
+        path_fallback = bt.FallBack()
+        path_following_sequence = bt.Sequence()
+        path_following_sequence.add_child(self.ExistsPath(self))
+        path_following_sequence.add_child(self.MoveOnPath(self))
+        create_path_fallback = bt.FallBack()
+        create_path_sequence = bt.Sequence()
+        create_path_sequence.add_child(self.NearbyKarboniteCells(self))
+        create_path_sequence.add_child(self.CreatePath(self))
+        create_path_fallback.add_child(create_path_sequence)
+        create_path_fallback.add_child(self.FindNearbyKarboniteCells(self))
+        path_fallback.add_child(path_following_sequence)
+        path_fallback.add_child(create_path_fallback)
+        no_adj_karbonite_sequence.add_child(path_fallback)
 
         karbonite.add_child(adjacent_karbonite_sequence)
-        #karbonite.add_child(no_adj_karbonite_sequence)
+        karbonite.add_child(no_adj_karbonite_sequence)
         karbonite.add_child(self.MoveRandomly(self))
         tree.add_child(karbonite)
 
@@ -267,20 +267,20 @@ class Worker(Unit):
                     self._status = bt.Status.RUNNING
 
     class KarboniteExists(bt.Condition):
-        """Check if there is any karbonite left on map"""
+        """Check if there is any karbonite left on the map."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def condition(self):
-            for row in self.__outer._maps["karbonite_map"]:
-                for karbonite_in_cell in row:
+            for column in self.__outer._maps['karbonite_map']:
+                for karbonite_in_cell in column:
                     if karbonite_in_cell > 0:
                         return True
             return False
 
-    class ExistPath(bt.Condition):
-        """Check if we have a path to follow"""
+    class ExistsPath(bt.Condition):
+        """Check if we have a path to follow."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -292,105 +292,111 @@ class Worker(Unit):
                 return False
 
     class MoveOnPath(bt.Action):
-        """Move on current path"""
+        """Move on the current path."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def action(self):
-            print('should move on path')
-            return
-            ## possibly a bit off logic here that can cause one extra turn to harvest. The final location is on the karbonite cell but we can harvest if adjacent.
+            # Possibly a bit off logic here that can cause one extra turn to harvest.
+            # The final location is on the karbonite cell but we can harvest if adjacent.
             if len(self.__outer._path_to_follow) == 1:
                 self.__outer._path_to_follow = None
                 self._status = bt.Status.SUCCESS
-                return
-            next_point = self.__outer._path_to_follow[0]
-            unit_map_location = self.__outer._unit.location.map_location()
-            move_direction = unit_map_location.direction_to(next_point)
-            if self.__outer._gc.can_move(self.__outer._unit.id, move_direction):
-                if self.__outer._gc.is_move_ready(self.__outer._unit.id):
-                    self.__outer._gc.move_robot(self.__outer._unit.id, move_direction)
-                    self.__outer._path_to_follow.pop(0)
-                self._status = bt.Status.RUNNING
             else:
-                self.__outer._path_to_follow = None
-                self._status = bt.Status.FAIL
+                next_point = self.__outer._path_to_follow[0]
+                unit_map_location = self.__outer._unit.location.map_location()
+                move_direction = unit_map_location.direction_to(next_point)
+                if self.__outer._gc.can_move(self.__outer._unit.id, move_direction):
+                    if self.__outer._gc.is_move_ready(self.__outer._unit.id):
+                        self.__outer._gc.move_robot(self.__outer._unit.id, move_direction)
+                        self.__outer._path_to_follow.pop(0)
+                    self._status = bt.Status.RUNNING
+                else:
+                    self.__outer._path_to_follow = None
+                    self._status = bt.Status.FAIL
 
-    class NeighbyKarboniteCells(bt.Condition):
-        """Check if we have some karbonite cell saved"""
+    class NearbyKarboniteCells(bt.Condition):
+        """Check if we have some karbonite cell saved to move towards."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def condition(self):
-            return len(self.__outer._neighby_karbonite_locations) > 0
+            return len(self.__outer._nearby_karbonite_locations) > 0
 
     class CreatePath(bt.Action):
-        """Create aStar path to first point in NeighbyKarboniteCells list"""
+        """Create aStar path to first point in the NearbyKarboniteCells list."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def action(self):
-            karbonite_location = self.__outer._neighby_karbonite_locations.pop(0)
-            karbonite_map = self.__outer._maps["karbonite_map"]
-            # someone stole karbonite meanwhile :(
-            if karbonite_map[karbonite_location.x][karbonite_location.y] == 0:
-                self.__outer._path_to_follow = None
-                self._status = bt.Status.FAIL
-                return
-            terrain_map = self.__outer._maps["terrain_map"]
-            my_units_map = self.__outer._maps["my_units_map"]
+            karbonite_location = self.__outer._nearby_karbonite_locations.pop(0)
+            karbonite_map = self.__outer._maps['karbonite_map']
+
+            # Make sure karbonite has not been stolen
+            while karbonite_map[karbonite_location.x][karbonite_location.y] == 0:
+                if len(self.__outer._nearby_karbonite_locations) > 0:
+                    karbonite_location = self.__outer._nearby_karbonite_locations.pop(0)
+                else:
+                    self._status = bt.Status.FAIL
+                    return
+
+            terrain_map = self.__outer._maps['terrain_map']
+            my_units_map = self.__outer._maps['my_units_map']
             unit_map_location = self.__outer._unit.location.map_location()
-            path = astar.astar(terrain_map, my_units_map, unit_map_location,karbonite_location)
+            path = astar.astar(terrain_map, my_units_map, unit_map_location, karbonite_location)
             if len(path) > 0:
-                path.pop(0)
+                path.pop(0) # Remove the point the unit is already on
                 self.__outer._path_to_follow = path
                 self._status = bt.Status.SUCCESS
             else:
                 self.__outer._path_to_follow = None
                 self._status = bt.Status.FAIL
 
-    class FindNeighbyKarboniteCells(bt.Action):
-        """Find neighby cells with karbonite by expanding manhattan distance"""
+    class FindNearbyKarboniteCells(bt.Action):
+        """Find nearby cells with karbonite by expanding manhattan distance"""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def action(self):
-            directions = [dir for dir in bc.Direction if dir is not bc.Direction.Center]
-            karbonite_map = self.__outer._maps["karbonite_map"]
-            h = len(karbonite_map)
-            w = len(karbonite_map[0])
+            karbonite_map = self.__outer._maps['karbonite_map']
+            width = len(karbonite_map)
+            height = len(karbonite_map[0])
             length = 2
-            map_location = self.__outer._unit.location.map_location()
-            while True:
-                no_more_cells_left = True
-                # iterate all directions
-                for dir in directions:
-                    # make a new location by adding a multiple of direction
-                    possible_location = map_location.add_multiple(dir, length)
-                    # check if outside the map
-                    if possible_location.x < 0 or possible_location.y < 0 or possible_location.x >= h or possible_location.y >= w:
-                        continue
-                    # there is a direciton not outside the map, so we continue
-                    no_more_cells_left = False
-                    # check if there is karbonite there
-                    if karbonite_map[possible_location.x][possible_location.y] > 0:
-                        self.__outer._neighby_karbonite_locations.append(possible_location)
-                # break if no unchecked cells left or we already have 3 possible cells (just a random number 3, nothing smart)
-                if no_more_cells_left or len(self.__outer._neighby_karbonite_locations) > 3:
-                    break
+            location = self.__outer._unit.location.map_location()
+            cells_left = True
+
+            while cells_left and len(self.__outer._nearby_karbonite_locations) <= 3:
+                cells_left = False
+                for x in range(-length, length + 1):
+                    for y in range(-length, length + 1):
+                        # Already checked these values
+                        if abs(x) <= length-1 and abs(y) <= length-1:
+                            continue
+
+                        possible_location = location.translate(x, y)
+
+                        # Check if location is outside of the map
+                        if possible_location.x < 0 or possible_location.y < 0 or possible_location.x >= width or possible_location.y >= height:
+                            continue
+
+                        cells_left = True
+
+                        # Determine if there is karbonite at the location
+                        if karbonite_map[possible_location.x][possible_location.y] > 0:
+                            self.__outer._nearby_karbonite_locations.append(possible_location)
                 length += 1
 
-            if (len(self.__outer._neighby_karbonite_locations) > 0):
+            if (len(self.__outer._nearby_karbonite_locations) > 0):
                 self._status = bt.Status.SUCCESS
             else:
                 self._status = bt.Status.FAIL
 
     class MoveRandomly(bt.Action):
-        """Move in some random direction"""
+        """Move in some random direction."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
