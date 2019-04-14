@@ -1,5 +1,7 @@
 import battlecode as bc
 import sys
+
+
 directions = [dir for dir in bc.Direction if dir is not bc.Direction.Center]
 
 

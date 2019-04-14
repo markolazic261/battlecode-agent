@@ -23,7 +23,7 @@ map_height = gc.starting_map(gc.planet()).height
 map_width = gc.starting_map(gc.planet()).width
 my_units = []
 
-random.seed(10)
+#random.seed(10)
 
 def attack(units):
     for unit in units:
@@ -99,7 +99,15 @@ def move_randomly(units):
 def init_workers():
     units = gc.my_units()
     for unit in units:
-        my_units.append(u.Worker(unit,gc,{"karbonite_map": karbonite_map, "terrain_map": terrain_map, "my_units_map": my_units_map}))
+        my_units.append(u.Worker(
+            unit,
+            gc,
+            {
+                "karbonite_map": karbonite_map,
+                "terrain_map": terrain_map,
+                "my_units_map": my_units_map
+            }
+        ))
 
 def init_maps():
     map = gc.starting_map(gc.planet())
