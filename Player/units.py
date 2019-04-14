@@ -298,23 +298,20 @@ class Worker(Unit):
             self.__outer = outer
 
         def action(self):
-            # Possibly a bit off logic here that can cause one extra turn to harvest.
-            # The final location is on the karbonite cell but we can harvest if adjacent.
-            if len(self.__outer._path_to_follow) == 1:
-                self.__outer._path_to_follow = None
-                self._status = bt.Status.SUCCESS
+            next_point = self.__outer._path_to_follow[0]
+            unit_map_location = self.__outer._unit.location.map_location()
+            move_direction = unit_map_location.direction_to(next_point)
+            if self.__outer._gc.can_move(self.__outer._unit.id, move_direction):
+                self._status = bt.Status.RUNNING
+                if self.__outer._gc.is_move_ready(self.__outer._unit.id):
+                    self.__outer._gc.move_robot(self.__outer._unit.id, move_direction)
+                    self.__outer._path_to_follow.pop(0)
+                    if len(self.__outer._path_to_follow) == 1:
+                        self.__outer._path_to_follow = None
+                        self._status = bt.Status.SUCCESS
             else:
-                next_point = self.__outer._path_to_follow[0]
-                unit_map_location = self.__outer._unit.location.map_location()
-                move_direction = unit_map_location.direction_to(next_point)
-                if self.__outer._gc.can_move(self.__outer._unit.id, move_direction):
-                    if self.__outer._gc.is_move_ready(self.__outer._unit.id):
-                        self.__outer._gc.move_robot(self.__outer._unit.id, move_direction)
-                        self.__outer._path_to_follow.pop(0)
-                    self._status = bt.Status.RUNNING
-                else:
-                    self.__outer._path_to_follow = None
-                    self._status = bt.Status.FAIL
+                self.__outer._path_to_follow = None
+                self._status = bt.Status.FAIL
 
     class NearbyKarboniteCells(bt.Condition):
         """Check if we have some karbonite cell saved to move towards."""
