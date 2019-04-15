@@ -23,7 +23,6 @@ map_height = gc.starting_map(gc.planet()).height
 map_width = gc.starting_map(gc.planet()).width
 my_units = []
 
-#random.seed(10)
 
 def attack(units):
     for unit in units:
@@ -109,6 +108,13 @@ def init_workers():
             }
         ))
 
+def update_units():
+    units = gc.my_units()
+    for unit in units:
+        for my_unit in my_units:
+            if unit.id == my_unit.get_unit().id:
+                my_unit.update_unit(unit)
+
 def init_maps():
     map = gc.starting_map(gc.planet())
     for x in range(map_width):
@@ -133,6 +139,7 @@ while True:
     else:
         try:
             units = gc.my_units()
+            update_units()
             update_enemy_units_map(units)
             update_my_units_map(units)
             for unit in my_units:
@@ -140,11 +147,10 @@ while True:
             build_units(units)
             attack(units)
             move_randomly(units)
-            gc.next_turn()
         except Exception as e:
             print('Error:', e)
             # use this to show where the error was
             traceback.print_exc()
-        #gc.next_turn()
+        gc.next_turn()
         sys.stdout.flush()
         sys.stderr.flush()

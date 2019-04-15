@@ -28,6 +28,7 @@ def astar(maze,friendly_units, start, end):
     end_node = Node(None, end)
     end_node.g = end_node.h = end_node.f = 0
 
+
     # Initialize both open and closed list
     open_list = []
     closed_list = []
@@ -88,16 +89,15 @@ def astar(maze,friendly_units, start, end):
             new_node.h = ((new_node.position.x - end_node.position.x) ** 2) + ((new_node.position.y - end_node.position.y) ** 2)
             new_node.f = new_node.g + new_node.h
 
-            min_cost = 0
-            min_index = -1
-
+            found_node = False
             for (index, node) in enumerate(open_list):
-                if node == new_node and node.g < min_cost:
-                    min_cost = node.g
-                    min_index = index
+                if node == new_node:
+                    found_node = True
+                    if new_node.g < node.g:
+                        open_list[index] = new_node
+                    break
 
-            if min_index == -1:
+            if not found_node:
                 open_list.append(new_node)
-            elif new_node.cost < min_cost:
-                open_list.append(new_node)
+
     return []

@@ -19,6 +19,12 @@ class Unit(ABC):
     def generate_tree(self):
         pass
 
+    def update_unit(self, unit):
+        self._unit = unit
+
+    def get_unit(self):
+        return self._unit
+
     def run(self):
         """Runs the unit's behaviour tree and returns the result."""
         return self._tree.run()
@@ -331,9 +337,10 @@ class Worker(Unit):
         def action(self):
             karbonite_location = self.__outer._nearby_karbonite_locations.pop(0)
             karbonite_map = self.__outer._maps['karbonite_map']
+            my_units_map = self.__outer._maps['my_units_map']
 
             # Make sure karbonite has not been stolen
-            while karbonite_map[karbonite_location.x][karbonite_location.y] == 0:
+            while karbonite_map[karbonite_location.x][karbonite_location.y] == 0 or my_units_map[karbonite_location.x][karbonite_location.y]:
                 if len(self.__outer._nearby_karbonite_locations) > 0:
                     karbonite_location = self.__outer._nearby_karbonite_locations.pop(0)
                 else:
