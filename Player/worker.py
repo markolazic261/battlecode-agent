@@ -164,7 +164,7 @@ class Worker(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            return strategy.Strategy.getInstance().nr_factories < strategy.Strategy.getInstance().max_factories
+            return strategy.Strategy.getInstance().getCurrentUnit(bc.UnitType.Factory) < strategy.Strategy.getInstance().getMaxUnit(bc.UnitType.Factory)
 
     class EnoughKarboniteToBuild(bt.Condition):
         """Determines if we have enought karbonite to build a Factory."""

@@ -25,19 +25,6 @@ map_width = gc.starting_map(gc.planet()).width
 my_units = []
 
 
-def attack(units):
-    for unit in units:
-        if unit.unit_type != bc.UnitType.Knight:
-            continue
-        location = unit.location
-        if location.is_on_map():
-            nearby = gc.sense_nearby_units(location.map_location(), 2)
-            for other in nearby:
-                if other.team != unit.team and gc.is_attack_ready(unit.id) and gc.can_attack(unit.id, other.id):
-                    gc.attack(unit.id, other.id)
-                    continue
-
-
 def build_units(units):
     for unit in units:
         if unit.unit_type != bc.UnitType.Factory:
@@ -59,6 +46,7 @@ def build_units(units):
 
 
 def update_my_units_map(units):
+    """Updates the map containing information regarding friendly units."""
     for x in range(map_width):
         for y in range(map_height):
             my_units_map[x][y] = None
@@ -72,6 +60,7 @@ def update_my_units_map(units):
 
 
 def update_enemy_units_map(units):
+    """Updates the map attempting to keep track of enemy units."""
     for x in range(map_width):
         for y in range(map_height):
             if enemy_units_map[x][y] and enemy_units_map[x][y].unit_type != bc.UnitType.Factory:
@@ -87,22 +76,14 @@ def update_enemy_units_map(units):
 
 
 def update_karbonite_map(unit_location, range):
+    """Updates the map containing information regarding karbonite."""
     locations = gc.all_locations_within(unit_location.map_location(), range)
     for map_location in locations:
         karbonite_map[map_location.x][map_location.y] = gc.karbonite_at(map_location)
 
 
-def move_randomly(units):
-    for unit in units:
-        d = random.choice(directions)
-        if gc.is_move_ready(unit.id) and gc.can_move(unit.id, d):
-            if unit.unit_type == bc.UnitType.Worker:
-                continue
-            gc.move_robot(unit.id, d)
-
-
-
 def init_workers():
+    """Initializes the worker units with behaviour trees."""
     units = gc.my_units()
     for unit in units:
         my_units.append(Worker(
@@ -117,6 +98,7 @@ def init_workers():
 
 
 def update_units(units):
+    """Updates all behaviour trees such that the _unit field (and more) is up to date."""
     for unit in units:
         for my_unit in my_units:
             if unit.id == my_unit.get_unit().id:
@@ -141,6 +123,7 @@ def update_units(units):
 
 
 def init_maps():
+    """Initializes maps used by the AI."""
     map = gc.starting_map(gc.planet())
     for x in range(map_width):
         karbonite_map.append([])
@@ -167,6 +150,7 @@ while True:
             update_units(units)
             update_enemy_units_map(units)
             update_my_units_map(units)
+            print(strategy.getInstance().unitNeeded())
             for unit in my_units:
                 unit.run()
             build_units(units) #Temporary before factory trees are up
