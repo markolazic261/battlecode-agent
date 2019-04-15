@@ -4,7 +4,7 @@ import sys
 import traceback
 import time
 import astar
-import units as u
+from worker import Worker
 import strategy
 
 gc = bc.GameController()
@@ -36,6 +36,7 @@ def attack(units):
                     gc.attack(unit.id, other.id)
                     continue
 
+
 def build_units(units):
     for unit in units:
         if unit.unit_type != bc.UnitType.Factory:
@@ -65,6 +66,7 @@ def update_my_units_map(units):
             map_location = location.map_location()
             my_units_map[map_location.x][map_location.y] = unit
 
+
 def update_enemy_units_map(units):
     for x in range(map_width):
         for y in range(map_height):
@@ -78,6 +80,7 @@ def update_enemy_units_map(units):
             for enemy in nearby:
                 map_location = enemy.location.map_location()
                 enemy_units_map[map_location.x][map_location.y] = unit
+
 
 def update_karbonite_map(unit_location, range):
     locations = gc.all_locations_within(unit_location.map_location(), range)
@@ -98,7 +101,7 @@ def move_randomly(units):
 def init_workers():
     units = gc.my_units()
     for unit in units:
-        my_units.append(u.Worker(
+        my_units.append(Worker(
             unit,
             gc,
             {
@@ -108,12 +111,13 @@ def init_workers():
             }
         ))
 
-def update_units():
-    units = gc.my_units()
+
+def update_units(units):
     for unit in units:
         for my_unit in my_units:
             if unit.id == my_unit.get_unit().id:
                 my_unit.update_unit(unit)
+
 
 def init_maps():
     map = gc.starting_map(gc.planet())
@@ -139,14 +143,12 @@ while True:
     else:
         try:
             units = gc.my_units()
-            update_units()
+            update_units(units)
             update_enemy_units_map(units)
             update_my_units_map(units)
             for unit in my_units:
                 unit.run()
-            build_units(units)
-            attack(units)
-            move_randomly(units)
+            build_units(units) #Temporary before factory trees are up
         except Exception as e:
             print('Error:', e)
             # use this to show where the error was
