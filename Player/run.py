@@ -5,6 +5,7 @@ import traceback
 import time
 import astar
 from worker import Worker
+from knight import Knight
 import strategy
 
 gc = bc.GameController()
@@ -48,6 +49,9 @@ def build_units(units):
             d = random.choice(directions)
             if gc.can_unload(unit.id, d):
                 gc.unload(unit.id, d)
+                knight = gc.sense_unit_at_location(unit.location.map_location().add(d))
+                if knight:
+                    my_units.append(Knight(knight, gc))
                 continue
         elif gc.can_produce_robot(unit.id, bc.UnitType.Knight):
             gc.produce_robot(unit.id, bc.UnitType.Knight)
@@ -117,6 +121,23 @@ def update_units(units):
         for my_unit in my_units:
             if unit.id == my_unit.get_unit().id:
                 my_unit.update_unit(unit)
+
+                # Update targeted enemy for knights
+                if my_unit.get_unit().unit_type == bc.UnitType.Knight:
+                    if my_unit.get_targeted_enemy():
+                        team = my_unit.get_unit().team
+                        range = my_unit.get_unit().vision_range
+                        location = my_unit.get_unit().location.map_location()
+
+                        nearby_units = gc.sense_nearby_units(location, range)
+                        found_enemy = False
+                        for nearby_unit in nearby_units:
+                            if nearby_unit.team != team and nearby_unit.id == my_unit.get_targeted_enemy().id:
+                                my_unit.update_targeted_enemy(nearby_unit)
+                                found_enemy = True
+                                break
+                        if not found_enemy:
+                            my_unit.update_targeted_enemy(None)
 
 
 def init_maps():

@@ -4,3 +4,4 @@ viewer_latest*
 viewer_currentInstall.json
 
 __pycache__/
+server.log

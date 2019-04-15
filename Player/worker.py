@@ -150,7 +150,7 @@ class Worker(units.Unit):
 
         def action(self):
             ### TODO: Smart way for escaping enemies
-            print("should run from enemies")
+            #print("should run from enemies")
             self._status = bt.Status.FAIL
 
     ##################
