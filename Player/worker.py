@@ -7,14 +7,21 @@ import units
 
 class Worker(units.Unit):
     """The container for the worker unit."""
-    def __init__(self, unit, gc, maps):
+    def __init__(self, unit, gc, maps, my_units):
         super().__init__(unit, gc)
         self._maps = maps
+        self._my_units = my_units
 
         self._blueprint_to_build_on = None
         self._karbonite_to_mine = None
         self._path_to_follow = None
         self._nearby_karbonite_locations = []
+
+    def update_blueprint_to_build_on(self, blueprint):
+        self._blueprint_to_build_on = blueprint
+
+    def get_blueprint_to_build_on(self):
+        return self._blueprint_to_build_on
 
     def generate_tree(self):
         """Generates the tree for the worker."""
@@ -115,8 +122,17 @@ class Worker(units.Unit):
             else:
                 # Build the factory and check if it is finished
                 self.__outer._gc.build(self.__outer._unit.id, factory.id)
-                if factory.structure_is_built():
+                if self.__outer._gc.unit(factory.id).structure_is_built():
                     self.__outer._blueprint_to_build_on = None
+
+                    from factory import Factory
+                    self.__outer._my_units.append(Factory(
+                        factory,
+                        self.__outer._gc,
+                        self.__outer._maps,
+                        self.__outer._my_units
+                    ))
+
                     self._status = bt.Status.SUCCESS
                 else:
                     self._status = bt.Status.RUNNING

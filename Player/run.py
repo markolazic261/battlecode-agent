@@ -19,30 +19,10 @@ unit_map = []
 terrain_map = []
 my_team = gc.team()
 enemy_team = bc.Team.Red if my_team == bc.Team.Blue else bc.Team.Blue
-strategy = strategy.Strategy()
+#strategy = strategy.Strategy()
 map_height = gc.starting_map(gc.planet()).height
 map_width = gc.starting_map(gc.planet()).width
 my_units = []
-
-
-def build_units(units):
-    for unit in units:
-        if unit.unit_type != bc.UnitType.Factory:
-            continue
-        #print(gc.can_produce_robot(unit.id, bc.UnitType.Knight))
-        #print(unit.is_factory_producing(), gc.karbonite() >= bc.cost_of(bc.UnitType.Knight, 1), gc.can_produce_robot(unit.id, bc.UnitType.Knight))
-        garrison = unit.structure_garrison()
-        if len(garrison) > 0:
-            d = random.choice(directions)
-            if gc.can_unload(unit.id, d):
-                gc.unload(unit.id, d)
-                knight = gc.sense_unit_at_location(unit.location.map_location().add(d))
-                if knight:
-                    my_units.append(Knight(knight, gc))
-                continue
-        elif gc.can_produce_robot(unit.id, bc.UnitType.Knight):
-            gc.produce_robot(unit.id, bc.UnitType.Knight)
-            continue
 
 
 def update_my_units_map(units):
@@ -50,9 +30,9 @@ def update_my_units_map(units):
     for x in range(map_width):
         for y in range(map_height):
             my_units_map[x][y] = None
-    strategy.getInstance().resetCurrentUnits()
+    strategy.Strategy.getInstance().resetCurrentUnits()
     for unit in units:
-        strategy.getInstance().addUnit(unit.unit_type)
+        strategy.Strategy.getInstance().addUnit(unit.unit_type)
         location = unit.location
         if location.is_on_map():
             map_location = location.map_location()
@@ -93,7 +73,8 @@ def init_workers():
                 "karbonite_map": karbonite_map,
                 "terrain_map": terrain_map,
                 "my_units_map": my_units_map
-            }
+            },
+            my_units
         ))
 
 
@@ -103,6 +84,14 @@ def update_units(units):
         for my_unit in my_units:
             if unit.id == my_unit.get_unit().id:
                 my_unit.update_unit(unit)
+
+                # Update blueprint to build on for workers
+                if my_unit.get_unit().unit_type == bc.UnitType.Worker:
+                    if my_unit.get_blueprint_to_build_on():
+                        blueprint = my_unit.get_blueprint_to_build_on()
+                        for possible_blueprint in units:
+                            if possible_blueprint.id == blueprint.id:
+                                my_unit.update_blueprint_to_build_on(possible_blueprint)
 
                 # Update targeted enemy for knights
                 if my_unit.get_unit().unit_type == bc.UnitType.Knight:
@@ -150,10 +139,8 @@ while True:
             update_units(units)
             update_enemy_units_map(units)
             update_my_units_map(units)
-            print(strategy.getInstance().unitNeeded())
             for unit in my_units:
                 unit.run()
-            build_units(units) #Temporary before factory trees are up
         except Exception as e:
             print('Error:', e)
             # use this to show where the error was

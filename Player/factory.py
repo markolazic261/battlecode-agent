@@ -1,13 +1,18 @@
 import battlecode as bc
 import behaviour_tree as bt
 import random
+import strategy
 import units
+from worker import Worker
+from knight import Knight
 
 
 class Factory(units.Unit):
     """The container for the factory unit."""
-    def __init__(self, unit, gc):
+    def __init__(self, unit, gc, maps, my_units):
         super().__init__(unit, gc)
+        self._maps = maps
+        self._my_units = my_units
 
     def generate_tree(self):
         tree = bt.Sequence()
@@ -16,9 +21,16 @@ class Factory(units.Unit):
         tree.add_child(unload)
 
         build_fallback = bt.FallBack()
+        workers = bt.Sequence()
+        need_more_workers = self.NeedMoreWorkers(self)
+        workers.add_child(need_more_workers)
+        can_build_worker = self.CanBuildWorker(self)
+        workers.add_child(can_build_worker)
+        build_worker = self.BuildWorker(self)
+        workers.add_child(build_worker)
+        build_fallback.add_child(workers)
+
         non_workers = bt.Sequence()
-        have_max_workers = self.HaveMaxWorkers(self)
-        non_workers.add_child(have_max_workers)
         can_build = self.CanBuild(self)
         non_workers.add_child(can_build)
         non_workers_fallback = bt.FallBack()
@@ -40,13 +52,6 @@ class Factory(units.Unit):
         non_workers_fallback.add_child(build_global)
         non_workers.add_child(non_workers_fallback)
         build_fallback.add_child(non_workers)
-
-        workers = bt.Sequence()
-        can_build_worker = self.CanBuildWorker(self)
-        workers.add_child(can_build_worker)
-        build_worker = self.BuildWorker(self)
-        workers.add_child(build_worker)
-        build_fallback.add_child(workers)
         tree.add_child(build_fallback)
 
         return tree
@@ -62,20 +67,73 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def action(self):
-            self._status = bt.Status.FAIL #TODO: Add logic
+            garrison = self.__outer._unit.structure_garrison()
+            if garrison:
+                direction = random.choice(list(bc.Direction))
+                if self.__outer._gc.can_unload(self.__outer._unit.id, direction):
+                    self.__outer._gc.unload(self.__outer._unit.id, direction)
 
-    ###############
-    # NON WORKERS #
-    ###############
+                    location = self.__outer._unit.location.map_location().add(direction)
+                    unit = self.__outer._gc.sense_unit_at_location(location)
 
-    class HaveMaxWorkers(bt.Condition):
-        """Check if enough workers exist."""
+                    if unit: # TODO: Add other unit types
+                        if unit.unit_type == bc.UnitType.Worker:
+                            strategy.Strategy.getInstance().removeInProduction(bc.UnitType.Worker)
+                            strategy.Strategy.getInstance().addUnit(bc.UnitType.Worker)
+                            self.__outer._my_units.append(Worker(
+                                unit,
+                                self.__outer._gc,
+                                self.__outer._maps,
+                                self.__outer._my_units
+                            ))
+                        elif unit.unit_type == bc.UnitType.Knight:
+                            strategy.Strategy.getInstance().removeInProduction(bc.UnitType.Knight)
+                            strategy.Strategy.getInstance().addUnit(bc.UnitType.Knight)
+                            self.__outer._my_units.append(Knight(
+                                unit,
+                                self.__outer._gc
+                            ))
+            self._status = bt.Status.SUCCESS
+
+    ###########
+    # WORKERS #
+    ###########
+
+    class NeedMoreWorkers(bt.Condition):
+        """Check if more workers are needed."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def condition(self):
-            return False
+            return strategy.Strategy.getInstance().getCurrentUnit(bc.UnitType.Worker) < strategy.Strategy.getInstance().getMaxUnit(bc.UnitType.Worker)
+
+    class CanBuildWorker(bt.Condition):
+        """Check if resources exist to build a worker."""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def condition(self):
+            return self.__outer._gc.karbonite() >= bc.UnitType.Worker.factory_cost()
+
+    class BuildWorker(bt.Action):
+        """Builds a worker."""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            if self.__outer._gc.can_produce_robot(self.__outer._unit.id, bc.UnitType.Worker):
+                self.__outer._gc.produce_robot(self.__outer._unit.id, bc.UnitType.Worker)
+                strategy.Strategy.getInstance().addInProduction(bc.UnitType.Worker)
+                self._status = bt.Status.SUCCESS
+            else:
+                self._status = bt.Status.FAIL
+
+    ###############
+    # NON WORKERS #
+    ###############
 
     class CanBuild(bt.Condition):
         """Check if resources to build exist."""
@@ -84,7 +142,7 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            return False
+            return self.__outer._gc.karbonite() >= bc.UnitType.Knight.factory_cost()
 
     class DamagedUnits(bt.Condition):
         """Check if damaged units are nearby."""
@@ -133,28 +191,6 @@ class Factory(units.Unit):
 
     class BuildGlobal(bt.Action):
         """Builds a unit depending on what is needed globally."""
-        def __init__(self, outer):
-            super().__init__()
-            self.__outer = outer
-
-        def action(self):
-            self._status = bt.Status.FAIL #TODO: Add logic
-
-    ###########
-    # WORKERS #
-    ###########
-
-    class CanBuildWorker(bt.Condition):
-        """Check if resources exist to build a worker."""
-        def __init__(self, outer):
-            super().__init__()
-            self.__outer = outer
-
-        def condition(self):
-            return False
-
-    class BuildWorker(bt.Action):
-        """Builds a worker."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer

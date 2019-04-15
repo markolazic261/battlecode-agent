@@ -19,6 +19,14 @@ class Strategy:
             'knight': 25,
             'mage': 10,
             'ranger': 15
+        },
+        'in_production': {
+            'worker': 0,
+            'factory': 0,
+            'healer': 0,
+            'knight': 0,
+            'mage': 0,
+            'ranger': 0
         }
     }
 
@@ -50,20 +58,52 @@ class Strategy:
             self.unit_information['current_amount']['ranger'] += 1
 
 
+    def addInProduction(self, unitType):
+        """Adds information regarding one type of unit being produced."""
+        if unitType == bc.UnitType.Worker:
+            self.unit_information['in_production']['worker'] += 1
+        elif unitType == bc.UnitType.Factory:
+            self.unit_information['in_production']['factory'] += 1
+        elif unitType == bc.UnitType.Healer:
+            self.unit_information['in_production']['healer'] += 1
+        elif unitType == bc.UnitType.Knight:
+            self.unit_information['in_production']['knight'] += 1
+        elif unitType == bc.UnitType.Mage:
+            self.unit_information['in_production']['mage'] += 1
+        elif unitType == bc.UnitType.Ranger:
+            self.unit_information['in_production']['ranger'] += 1
+
+
+    def removeInProduction(self, unitType):
+        """Removes information regarding one type of unit being produced."""
+        if unitType == bc.UnitType.Worker:
+            self.unit_information['in_production']['worker'] -= 1
+        elif unitType == bc.UnitType.Factory:
+            self.unit_information['in_production']['factory'] -= 1
+        elif unitType == bc.UnitType.Healer:
+            self.unit_information['in_production']['healer'] -= 1
+        elif unitType == bc.UnitType.Knight:
+            self.unit_information['in_production']['knight'] -= 1
+        elif unitType == bc.UnitType.Mage:
+            self.unit_information['in_production']['mage'] -= 1
+        elif unitType == bc.UnitType.Ranger:
+            self.unit_information['in_production']['ranger'] -= 1
+
+
     def getCurrentUnit(self, unitType):
         """Gets information regarding one type of unit existing."""
         if unitType == bc.UnitType.Worker:
-            return self.unit_information['current_amount']['worker']
+            return self.unit_information['current_amount']['worker'] + self.unit_information['in_production']['worker']
         elif unitType == bc.UnitType.Factory:
-            return self.unit_information['current_amount']['factory']
+            return self.unit_information['current_amount']['factory'] + self.unit_information['in_production']['factory']
         elif unitType == bc.UnitType.Healer:
-            return self.unit_information['current_amount']['healer']
+            return self.unit_information['current_amount']['healer'] + self.unit_information['in_production']['healer']
         elif unitType == bc.UnitType.Knight:
-            return self.unit_information['current_amount']['knight']
+            return self.unit_information['current_amount']['knight'] + self.unit_information['in_production']['knight']
         elif unitType == bc.UnitType.Mage:
-            return self.unit_information['current_amount']['mage']
+            return self.unit_information['current_amount']['mage'] + self.unit_information['in_production']['mage']
         elif unitType == bc.UnitType.Ranger:
-            return self.unit_information['current_amount']['ranger']
+            return self.unit_information['current_amount']['ranger'] + self.unit_information['in_production']['ranger']
 
 
     def getMaxUnit(self, unitType):
