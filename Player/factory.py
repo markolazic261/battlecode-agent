@@ -76,10 +76,10 @@ class Factory(units.Unit):
                     location = self.__outer._unit.location.map_location().add(direction)
                     unit = self.__outer._gc.sense_unit_at_location(location)
 
-                    if unit: # TODO: Add other unit types
+                    if unit: # TODO: Add other unit types' tree containers
+                        strategy.Strategy.getInstance().removeInProduction(unit.unit_type)
+                        strategy.Strategy.getInstance().addUnit(unit.unit_type)
                         if unit.unit_type == bc.UnitType.Worker:
-                            strategy.Strategy.getInstance().removeInProduction(bc.UnitType.Worker)
-                            strategy.Strategy.getInstance().addUnit(bc.UnitType.Worker)
                             self.__outer._my_units.append(Worker(
                                 unit,
                                 self.__outer._gc,
@@ -87,8 +87,6 @@ class Factory(units.Unit):
                                 self.__outer._my_units
                             ))
                         elif unit.unit_type == bc.UnitType.Knight:
-                            strategy.Strategy.getInstance().removeInProduction(bc.UnitType.Knight)
-                            strategy.Strategy.getInstance().addUnit(bc.UnitType.Knight)
                             self.__outer._my_units.append(Knight(
                                 unit,
                                 self.__outer._gc
@@ -151,6 +149,18 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def condition(self):
+            factory_x = self.__outer._unit.location.map_location().x
+            factory_y = self.__outer._unit.location.map_location().y
+            for x in range(-5, 6):
+                for y in range(-5, 6):
+                    if factory_x + x < 0 or factory_x + x >= len(self.__outer._maps['my_units_map']):
+                        continue
+                    if factory_y + y < 0 or factory_y + y >= len(self.__outer._maps['my_units_map'][factory_x + x]):
+                        continue
+                    unit = self.__outer._maps['my_units_map'][factory_x + x][factory_y + y]
+                    if unit:
+                        if unit.unit_type != bc.UnitType.Factory and unit.health <= 0.5 * unit.max_health:
+                            return True
             return False
 
     class NoHealerNearby(bt.Condition):
@@ -160,7 +170,19 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            return False
+            factory_x = self.__outer._unit.location.map_location().x
+            factory_y = self.__outer._unit.location.map_location().y
+            for x in range(-5, 6):
+                for y in range(-5, 6):
+                    if factory_x + x < 0 or factory_x + x >= len(self.__outer._maps['my_units_map']):
+                        continue
+                    if factory_y + y < 0 or factory_y + y >= len(self.__outer._maps['my_units_map'][factory_x + x]):
+                        continue
+                    unit = self.__outer._maps['my_units_map'][factory_x + x][factory_y + y]
+                    if unit:
+                        if unit.unit_type == bc.UnitType.Healer:
+                            return False
+            return True
 
     class BuildHealer(bt.Action):
         """Builds a healer."""
@@ -169,7 +191,12 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def action(self):
-            self._status = bt.Status.FAIL #TODO: Add logic
+            if self.__outer._gc.can_produce_robot(self.__outer._unit.id, bc.UnitType.Healer):
+                self.__outer._gc.produce_robot(self.__outer._unit.id, bc.UnitType.Healer)
+                strategy.Strategy.getInstance().addInProduction(bc.UnitType.Healer)
+                self._status = bt.Status.SUCCESS
+            else:
+                self._status = bt.Status.FAIL
 
     class EnemiesNearby(bt.Condition):
         """Check if an enemy is in the area."""
@@ -178,6 +205,17 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def condition(self):
+            factory_x = self.__outer._unit.location.map_location().x
+            factory_y = self.__outer._unit.location.map_location().y
+            for x in range(-5, 6):
+                for y in range(-5, 6):
+                    if factory_x + x < 0 or factory_x + x >= len(self.__outer._maps['enemy_units_map']):
+                        continue
+                    if factory_y + y < 0 or factory_y + y >= len(self.__outer._maps['enemy_units_map'][factory_x + x]):
+                        continue
+                    unit = self.__outer._maps['enemy_units_map'][factory_x + x][factory_y + y]
+                    if unit:
+                        return True
             return False
 
     class BuildKnight(bt.Action):
@@ -187,7 +225,12 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def action(self):
-            self._status = bt.Status.FAIL #TODO: Add logic
+            if self.__outer._gc.can_produce_robot(self.__outer._unit.id, bc.UnitType.Knight):
+                self.__outer._gc.produce_robot(self.__outer._unit.id, bc.UnitType.Knight)
+                strategy.Strategy.getInstance().addInProduction(bc.UnitType.Knight)
+                self._status = bt.Status.SUCCESS
+            else:
+                self._status = bt.Status.FAIL
 
     class BuildGlobal(bt.Action):
         """Builds a unit depending on what is needed globally."""
@@ -196,4 +239,13 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def action(self):
-            self._status = bt.Status.FAIL #TODO: Add logic
+            unit_type = strategy.Strategy.getInstance().unitNeeded()
+            if unit_type:
+                if self.__outer._gc.can_produce_robot(self.__outer._unit.id, unit_type):
+                    self.__outer._gc.produce_robot(self.__outer._unit.id, unit_type)
+                    strategy.Strategy.getInstance().addInProduction(unit_type)
+                    self._status = bt.Status.SUCCESS
+                else:
+                    self._status = bt.Status.FAIL
+            else:
+                self._status = bt.Status.FAIL

@@ -72,7 +72,8 @@ def init_workers():
             {
                 "karbonite_map": karbonite_map,
                 "terrain_map": terrain_map,
-                "my_units_map": my_units_map
+                "my_units_map": my_units_map,
+                "enemy_units_map": enemy_units_map
             },
             my_units
         ))
