@@ -10,12 +10,6 @@ class Knight(units.Unit):
         super().__init__(unit, gc)
         self._targeted_enemy = None
 
-    def update_targeted_enemy(self, enemy):
-        self._targeted_enemy = enemy
-
-    def get_targeted_enemy(self):
-        return self._targeted_enemy
-
     def generate_tree(self):
         """Generates the tree for the knight."""
         tree = bt.FallBack()
@@ -56,12 +50,14 @@ class Knight(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            range = self.__outer._unit.vision_range
-            location = self.__outer._unit.location.map_location()
-            team = self.__outer._unit.team
+            knight = self.__outer.unit()
+            range = knight.vision_range
+            location = knight.location.map_location()
+            team = knight.team
 
             # If already have a targeted enemy which is in range, return True
-            if self.__outer._targeted_enemy and location.distance_squared_to(self.__outer._targeted_enemy.location.map_location()) <= range:
+            enemy = self.__outer.get_unit_from_id(self.__outer._targeted_enemy)
+            if enemy and location.distance_squared_to(enemy.location.map_location()) <= range:
                 return True
             else:
                 self.__outer._targeted_enemy = None
@@ -70,7 +66,7 @@ class Knight(units.Unit):
             nearby_units = self.__outer._gc.sense_nearby_units(location, range)
             for unit in nearby_units:
                 if unit.team != team:
-                    self.__outer._targeted_enemy = unit
+                    self.__outer._targeted_enemy = unit.id
                     return True
             return False
 
@@ -81,8 +77,8 @@ class Knight(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            location = self.__outer._unit.location
-            enemy_location = self.__outer._targeted_enemy.location
+            location = self.__outer.unit().location
+            enemy_location = self.__outer.get_unit_from_id(self.__outer._targeted_enemy).location
             return location.is_adjacent_to(enemy_location)
 
     class Attack(bt.Action):
@@ -92,8 +88,8 @@ class Knight(units.Unit):
             self.__outer = outer
 
         def action(self):
-            enemy = self.__outer._targeted_enemy
-            unit = self.__outer._unit
+            enemy = self.__outer.get_unit(self.__outer._targeted_enemy)
+            unit = self.__outer.unit()
 
             if not enemy:
                 self._status = bt.Status.FAIL
@@ -122,8 +118,8 @@ class Knight(units.Unit):
             self.__outer = outer
 
         def action(self):
-            enemy = self.__outer._targeted_enemy
-            unit = self.__outer._unit
+            enemy = self.__outer.get_unit_from_id(self.__outer._targeted_enemy)
+            unit = self.__outer.unit()
 
             if not enemy:
                 self._status = bt.Status.FAIL
@@ -147,8 +143,9 @@ class Knight(units.Unit):
 
         def action(self):
             random_dir = random.choice(list(bc.Direction))
-            if self.__outer._gc.is_move_ready(self.__outer._unit.id) and self.__outer._gc.can_move(self.__outer._unit.id, random_dir):
-                self.__outer._gc.move_robot(self.__outer._unit.id, random_dir)
+            unit = self.__outer.unit()
+            if self.__outer._gc.is_move_ready(unit.id) and self.__outer._gc.can_move(unit.id, random_dir):
+                self.__outer._gc.move_robot(unit.id, random_dir)
                 self._status = bt.Status.SUCCESS
             else:
                 self._status = bt.Status.FAIL

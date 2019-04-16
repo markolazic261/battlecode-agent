@@ -79,39 +79,6 @@ def init_workers():
         ))
 
 
-def update_units(units):
-    """Updates all behaviour trees such that the _unit field (and more) is up to date."""
-    for unit in units:
-        for my_unit in my_units:
-            if unit.id == my_unit.get_unit().id:
-                my_unit.update_unit(unit)
-
-                # Update blueprint to build on for workers
-                if my_unit.get_unit().unit_type == bc.UnitType.Worker:
-                    if my_unit.get_blueprint_to_build_on():
-                        blueprint = my_unit.get_blueprint_to_build_on()
-                        for possible_blueprint in units:
-                            if possible_blueprint.id == blueprint.id:
-                                my_unit.update_blueprint_to_build_on(possible_blueprint)
-
-                # Update targeted enemy for knights
-                if my_unit.get_unit().unit_type == bc.UnitType.Knight:
-                    if my_unit.get_targeted_enemy():
-                        team = my_unit.get_unit().team
-                        range = my_unit.get_unit().vision_range
-                        location = my_unit.get_unit().location.map_location()
-
-                        nearby_units = gc.sense_nearby_units(location, range)
-                        found_enemy = False
-                        for nearby_unit in nearby_units:
-                            if nearby_unit.team != team and nearby_unit.id == my_unit.get_targeted_enemy().id:
-                                my_unit.update_targeted_enemy(nearby_unit)
-                                found_enemy = True
-                                break
-                        if not found_enemy:
-                            my_unit.update_targeted_enemy(None)
-
-
 def init_maps():
     """Initializes maps used by the AI."""
     map = gc.starting_map(gc.planet())
@@ -137,7 +104,6 @@ while True:
     else:
         try:
             units = gc.my_units()
-            update_units(units)
             update_enemy_units_map(units)
             update_my_units_map(units)
             for unit in my_units:

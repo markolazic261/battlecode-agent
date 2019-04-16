@@ -19,13 +19,16 @@ class Unit(ABC):
     def generate_tree(self):
         pass
 
-    def update_unit(self, unit):
-        self._unit = unit
+    def get_unit(self, unit_id):
+        try:
+            return self._gc.unit(unit_id)
+        except:
+            # Unit not in visible range.
+            return None
 
-    def get_unit(self):
-        return self._unit
+    def unit(self):
+        return self.get_unit_from_id(self._unit)
 
     def run(self):
         """Runs the unit's behaviour tree and returns the result."""
         return self._tree.run()
-        
