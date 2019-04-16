@@ -68,13 +68,14 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def action(self):
-            garrison = self.__outer._unit.structure_garrison()
+            factory = self.__outer.unit()
+            garrison = factory.structure_garrison()
             if garrison:
                 direction = random.choice(list(bc.Direction))
-                if self.__outer._gc.can_unload(self.__outer._unit.id, direction):
-                    self.__outer._gc.unload(self.__outer._unit.id, direction)
+                if self.__outer._gc.can_unload(factory.id, direction):
+                    self.__outer._gc.unload(factory.id, direction)
 
-                    location = self.__outer._unit.location.map_location().add(direction)
+                    location = factory.location.map_location().add(direction)
                     unit = self.__outer._gc.sense_unit_at_location(location)
 
                     if unit: # TODO: Add other unit types' tree containers
@@ -82,7 +83,7 @@ class Factory(units.Unit):
                         strategy.Strategy.getInstance().addUnit(unit.unit_type)
                         if unit.unit_type == bc.UnitType.Worker:
                             self.__outer._my_units.append(Worker(
-                                unit,
+                                unit.id,
                                 self.__outer._gc,
                                 self.__outer._maps,
                                 self.__outer._my_units
@@ -128,8 +129,9 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def action(self):
-            if self.__outer._gc.can_produce_robot(self.__outer._unit.id, bc.UnitType.Worker):
-                self.__outer._gc.produce_robot(self.__outer._unit.id, bc.UnitType.Worker)
+            factory = self.__outer.unit()
+            if self.__outer._gc.can_produce_robot(factory.id, bc.UnitType.Worker):
+                self.__outer._gc.produce_robot(factory.id, bc.UnitType.Worker)
                 strategy.Strategy.getInstance().addInProduction(bc.UnitType.Worker)
                 self._status = bt.Status.SUCCESS
             else:
@@ -155,8 +157,9 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            factory_x = self.__outer._unit.location.map_location().x
-            factory_y = self.__outer._unit.location.map_location().y
+            factory = self.__outer.unit()
+            factory_x = factory.location.map_location().x
+            factory_y = factory.location.map_location().y
             for x in range(-5, 6):
                 for y in range(-5, 6):
                     if factory_x + x < 0 or factory_x + x >= len(self.__outer._maps['my_units_map']):
@@ -176,8 +179,9 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            factory_x = self.__outer._unit.location.map_location().x
-            factory_y = self.__outer._unit.location.map_location().y
+            factory = self.__outer.unit()
+            factory_x = factory.location.map_location().x
+            factory_y = factory.location.map_location().y
             for x in range(-5, 6):
                 for y in range(-5, 6):
                     if factory_x + x < 0 or factory_x + x >= len(self.__outer._maps['my_units_map']):
@@ -197,8 +201,9 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def action(self):
-            if self.__outer._gc.can_produce_robot(self.__outer._unit.id, bc.UnitType.Healer):
-                self.__outer._gc.produce_robot(self.__outer._unit.id, bc.UnitType.Healer)
+            factory = self.__outer.unit()
+            if self.__outer._gc.can_produce_robot(factory.id, bc.UnitType.Healer):
+                self.__outer._gc.produce_robot(factory.id, bc.UnitType.Healer)
                 strategy.Strategy.getInstance().addInProduction(bc.UnitType.Healer)
                 self._status = bt.Status.SUCCESS
             else:
@@ -211,8 +216,9 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            factory_x = self.__outer._unit.location.map_location().x
-            factory_y = self.__outer._unit.location.map_location().y
+            factory = self.__outer.unit()
+            factory_x = factory.location.map_location().x
+            factory_y = factory.location.map_location().y
             for x in range(-5, 6):
                 for y in range(-5, 6):
                     if factory_x + x < 0 or factory_x + x >= len(self.__outer._maps['enemy_units_map']):
@@ -231,8 +237,9 @@ class Factory(units.Unit):
             self.__outer = outer
 
         def action(self):
-            if self.__outer._gc.can_produce_robot(self.__outer._unit.id, bc.UnitType.Knight):
-                self.__outer._gc.produce_robot(self.__outer._unit.id, bc.UnitType.Knight)
+            factory = self.__outer.unit()
+            if self.__outer._gc.can_produce_robot(factory.id, bc.UnitType.Knight):
+                self.__outer._gc.produce_robot(factory.id, bc.UnitType.Knight)
                 strategy.Strategy.getInstance().addInProduction(bc.UnitType.Knight)
                 self._status = bt.Status.SUCCESS
             else:
@@ -247,8 +254,9 @@ class Factory(units.Unit):
         def action(self):
             unit_type = strategy.Strategy.getInstance().unitNeeded()
             if unit_type:
-                if self.__outer._gc.can_produce_robot(self.__outer._unit.id, unit_type):
-                    self.__outer._gc.produce_robot(self.__outer._unit.id, unit_type)
+                factory = self.__outer.unit()
+                if self.__outer._gc.can_produce_robot(factory.id, unit_type):
+                    self.__outer._gc.produce_robot(factory.id, unit_type)
                     strategy.Strategy.getInstance().addInProduction(unit_type)
                     self._status = bt.Status.SUCCESS
                 else:

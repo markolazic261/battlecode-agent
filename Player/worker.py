@@ -127,7 +127,7 @@ class Worker(units.Unit):
 
                     from factory import Factory
                     self.__outer._my_units.append(Factory(
-                        factory,
+                        factory.id,
                         self.__outer._gc,
                         self.__outer._maps,
                         self.__outer._my_units
