@@ -56,7 +56,7 @@ class Knight(units.Unit):
             team = knight.team
 
             # If already have a targeted enemy which is in range, return True
-            enemy = self.__outer.get_unit(self.__outer._targeted_enemy)
+            enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
             if enemy and location.distance_squared_to(enemy.location.map_location()) <= range:
                 return True
             else:
@@ -78,7 +78,7 @@ class Knight(units.Unit):
 
         def condition(self):
             location = self.__outer.unit().location
-            enemy_location = self.__outer.get_unit(self.__outer._targeted_enemy).location
+            enemy_location = self.__outer.get_enemy_unit(self.__outer._targeted_enemy).location
             return location.is_adjacent_to(enemy_location)
 
     class Attack(bt.Action):
@@ -88,7 +88,7 @@ class Knight(units.Unit):
             self.__outer = outer
 
         def action(self):
-            enemy = self.__outer.get_unit(self.__outer._targeted_enemy)
+            enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
             unit = self.__outer.unit()
 
             if not enemy:
@@ -118,7 +118,7 @@ class Knight(units.Unit):
             self.__outer = outer
 
         def action(self):
-            enemy = self.__outer.get_unit(self.__outer._targeted_enemy)
+            enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
             unit = self.__outer.unit()
 
             if not enemy:

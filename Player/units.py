@@ -19,19 +19,22 @@ class Unit(ABC):
     def generate_tree(self):
         pass
 
-    def get_unit(self, unit_id):
+    def get_enemy_unit(self, unit_id):
         try:
             return self._gc.unit(unit_id)
         except:
             # Unit not in visible range.
             return None
 
-    def unit(self):
+    def get_friendly_unit(self, unit_id):
         units = self._gc.my_units()
         for unit in units:
-            if unit.id == self._unit:
+            if unit.id == unit_id:
                 return unit
         return None
+
+    def unit(self):
+        return self.get_friendly_unit(self._unit)
 
     def run(self):
         """Runs the unit's behaviour tree and returns the result."""

@@ -84,7 +84,7 @@ class Worker(units.Unit):
 
         def condition(self):
             # Already has a factory that it is building on
-            blueprint = self.__outer.get_unit(self.__outer._blueprint_to_build_on)
+            blueprint = self.__outer.get_friendly_unit(self.__outer._blueprint_to_build_on)
             worker = self.__outer.unit()
             if blueprint and self.__outer._gc.can_build(worker.id, blueprint.id) :
                 return True
@@ -110,7 +110,7 @@ class Worker(units.Unit):
             self.__outer = outer
 
         def action(self):
-            factory = self.__outer.get_unit(self.__outer._blueprint_to_build_on)
+            factory = self.__outer.get_friendly_unit(self.__outer._blueprint_to_build_on)
             worker = self.__outer.unit()
 
             # Factory does not exist even though it should
@@ -119,7 +119,7 @@ class Worker(units.Unit):
             else:
                 # Build the factory and check if it is finished
                 self.__outer._gc.build(worker.id, factory.id)
-                if self.__outer.get_unit(factory.id).structure_is_built():
+                if self.__outer.get_friendly_unit(factory.id).structure_is_built():
                     self.__outer._blueprint_to_build_on = None
 
                     from factory import Factory
