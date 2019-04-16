@@ -7,7 +7,7 @@ class Healer(units.Unit):
     """The container for the healer unit."""
     def __init__(self, unit, gc):
         super().__init__(unit, gc)
-        self._targeted_friend_id = None
+        self._targeted_friend = None
 
     def generate_tree(self):
         """Generates the tree for the knight."""
@@ -75,7 +75,7 @@ class Healer(units.Unit):
             highestPrioUnit = None
             for unit in nearby:
                 if unit.unit_type != bc.UnitType.Factory and unit.id != healer.id and unit.health < unit.max_health:
-                    currentHealthProcentage = unit.health/unit.max_health
+                    currentHealthProcentage = unit.health / unit.max_health
                     if currentHealthProcentage < lowestHealthProcentage:
                         lowestHealthProcentage = currentHealthProcentage
                         highestPrioUnit = unit.id
@@ -93,7 +93,20 @@ class Healer(units.Unit):
             self.__outer = outer
 
         def action(self):
-            print('healing')
+            friend = self.__outer.get_friendly_unit(self.__outer._targeted_friend)
+            unit = self.__outer.unit()
+
+            if not friend:
+                self._status = bt.Status.FAIL
+            else:
+                if self.__outer._gc.is_heal_ready(unit.id) and self.__outer._gc.can_heal(unit.id, friend.id):
+                    self.__outer._gc.heal(unit.id, friend.id)
+                    print('friend healed')
+                    if friend.health == friend.max_health:
+                        self.__outer._targeted_friend = None
+                    self._status = bt.Status.SUCCESS
+                else:
+                    self._status = bt.Status.RUNNING
 
 
 
