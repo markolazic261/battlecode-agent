@@ -17,12 +17,6 @@ class Worker(units.Unit):
         self._path_to_follow = None
         self._nearby_karbonite_locations = []
 
-    def update_blueprint_to_build_on(self, blueprint):
-        self._blueprint_to_build_on = blueprint
-
-    def get_blueprint_to_build_on(self):
-        return self._blueprint_to_build_on
-
     def generate_tree(self):
         """Generates the tree for the worker."""
         tree = bt.FallBack()
@@ -90,20 +84,22 @@ class Worker(units.Unit):
 
         def condition(self):
             # Already has a factory that it is building on
-            if self.__outer._blueprint_to_build_on and self.__outer._gc.can_build(self.__outer._unit.id, self.__outer._blueprint_to_build_on.id) :
+            blueprint = self.__outer.get_unit(self.__outer._blueprint_to_build_on)
+            worker = self.__outer.unit()
+            if blueprint and self.__outer._gc.can_build(worker.id, blueprint.id) :
                 return True
             else:
                 self.__outer._blueprint_to_build_on = None
 
 
             # Look for factories that are not built yet
-            location = self.__outer._unit.location
+            location = worker.location
             if location.is_on_map():
                 nearby_factories = self.__outer._gc.sense_nearby_units_by_type(location.map_location(), 2, bc.UnitType.Factory)
                 for factory in nearby_factories:
-                    if self.__outer._gc.can_build(self.__outer._unit.id, factory.id):
+                    if self.__outer._gc.can_build(worker.id, factory.id):
                         # Found factory
-                        self.__outer._blueprint_to_build_on = factory
+                        self.__outer._blueprint_to_build_on = factory.id
                         return True
             return False
 
@@ -114,15 +110,16 @@ class Worker(units.Unit):
             self.__outer = outer
 
         def action(self):
-            factory = self.__outer._blueprint_to_build_on
+            factory = self.__outer.get_unit(self.__outer._blueprint_to_build_on)
+            worker = self.__outer.unit()
 
             # Factory does not exist even though it should
             if not factory:
                 self._status = bt.Status.FAIL
             else:
                 # Build the factory and check if it is finished
-                self.__outer._gc.build(self.__outer._unit.id, factory.id)
-                if self.__outer._gc.unit(factory.id).structure_is_built():
+                self.__outer._gc.build(worker.id, factory.id)
+                if self.__outer.get_unit(factory.id).structure_is_built():
                     self.__outer._blueprint_to_build_on = None
 
                     from factory import Factory
@@ -148,11 +145,12 @@ class Worker(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            location = self.__outer._unit.location
+            worker = self.__outer.unit()
+            location = worker.location
             if location.is_on_map():
                 # Determines if we can see some enemy units beside workers and factories.
                 enemy_team = bc.Team.Red if self.__outer._gc.team() == bc.Team.Blue else bc.Team.Blue
-                nearby_enemy_units = self.__outer._gc.sense_nearby_units_by_team(location.map_location(), self.__outer._unit.vision_range, enemy_team)
+                nearby_enemy_units = self.__outer._gc.sense_nearby_units_by_team(location.map_location(), worker.vision_range, enemy_team)
                 for enemy in nearby_enemy_units:
                     if enemy.unit_type != bc.UnitType.Factory and enemy.unit_type != bc.UnitType.Worker:
                         return True
@@ -201,9 +199,10 @@ class Worker(units.Unit):
             blueprint_added = False
             # Check if we can place a blueprint in any adjacent cell
             # TODO: Make this a bit smarter to chose a place for factory
+            worker = self.__outer.unit()
             for dir in list(bc.Direction):
-                if self.__outer._gc.can_blueprint(self.__outer._unit.id, bc.UnitType.Factory, dir):
-                    self.__outer._gc.blueprint(self.__outer._unit.id, bc.UnitType.Factory, dir)
+                if self.__outer._gc.can_blueprint(worker.id, bc.UnitType.Factory, dir):
+                    self.__outer._gc.blueprint(worker.id, bc.UnitType.Factory, dir)
                     blueprint_added = True
                     break
             if blueprint_added:
@@ -222,8 +221,9 @@ class Worker(units.Unit):
             self.__outer = outer
 
         def condition(self):
+            worker = self.__outer.unit()
             if self.__outer._karbonite_to_mine and self.__outer._gc.can_harvest(
-                self.__outer._unit.id,
+                worker.id,
                 self.__outer._karbonite_to_mine
             ):
                 return True
@@ -231,7 +231,7 @@ class Worker(units.Unit):
                 self.__outer.karbonite_to_mine = None
 
             for dir in list(bc.Direction):
-                if self.__outer._gc.can_harvest(self.__outer._unit.id, dir):
+                if self.__outer._gc.can_harvest(worker.id, dir):
                     self.__outer._karbonite_to_mine = dir
                     return True
             return False
@@ -250,9 +250,10 @@ class Worker(units.Unit):
                 self._status = bt.Status.FAIL
             else:
                 # Harvest the karbonite and check if deposit is empty
-                self.__outer._gc.harvest(self.__outer._unit.id, karbonite_direction)
-                amount = self.__outer._unit.worker_harvest_amount()
-                karbonite_location = self.__outer._unit.location.map_location().add(karbonite_direction)
+                worker = self.__outer.unit()
+                self.__outer._gc.harvest(worker.id, karbonite_direction)
+                amount = worker.worker_harvest_amount()
+                karbonite_location = worker.location.map_location().add(karbonite_direction)
                 self.__outer._maps['karbonite_map'][karbonite_location.x][karbonite_location.y] = max(
                     self.__outer._maps['karbonite_map'][karbonite_location.x][karbonite_location.y] - amount,
                     0
@@ -296,12 +297,13 @@ class Worker(units.Unit):
 
         def action(self):
             next_point = self.__outer._path_to_follow[0]
-            unit_map_location = self.__outer._unit.location.map_location()
+            worker = self.__outer.unit()
+            unit_map_location = worker.location.map_location()
             move_direction = unit_map_location.direction_to(next_point)
-            if self.__outer._gc.can_move(self.__outer._unit.id, move_direction):
+            if self.__outer._gc.can_move(worker.id, move_direction):
                 self._status = bt.Status.RUNNING
-                if self.__outer._gc.is_move_ready(self.__outer._unit.id):
-                    self.__outer._gc.move_robot(self.__outer._unit.id, move_direction)
+                if self.__outer._gc.is_move_ready(worker.id):
+                    self.__outer._gc.move_robot(worker.id, move_direction)
                     self.__outer._path_to_follow.pop(0)
                     if len(self.__outer._path_to_follow) == 1:
                         self.__outer._path_to_follow = None
@@ -340,7 +342,8 @@ class Worker(units.Unit):
 
             terrain_map = self.__outer._maps['terrain_map']
             my_units_map = self.__outer._maps['my_units_map']
-            unit_map_location = self.__outer._unit.location.map_location()
+            worker = self.__outer.unit()
+            unit_map_location = worker.location.map_location()
             path = astar.astar(terrain_map, my_units_map, unit_map_location, karbonite_location)
             if len(path) > 0:
                 path.pop(0) # Remove the point the unit is already on
@@ -361,7 +364,8 @@ class Worker(units.Unit):
             width = len(karbonite_map)
             height = len(karbonite_map[0])
             length = 2
-            location = self.__outer._unit.location.map_location()
+            worker = self.__outer.unit()
+            location = worker.location.map_location()
             cells_left = True
 
             while cells_left and len(self.__outer._nearby_karbonite_locations) <= 3:
@@ -397,9 +401,10 @@ class Worker(units.Unit):
             self.__outer = outer
 
         def action(self):
+            worker = self.__outer.unit()
             random_dir = random.choice(list(bc.Direction))
-            if self.__outer._gc.is_move_ready(self.__outer._unit.id) and self.__outer._gc.can_move(self.__outer._unit.id, random_dir):
-                self.__outer._gc.move_robot(self.__outer._unit.id, random_dir)
+            if self.__outer._gc.is_move_ready(worker.id) and self.__outer._gc.can_move(worker.id, random_dir):
+                self.__outer._gc.move_robot(worker.id, random_dir)
                 self._status = bt.Status.SUCCESS
             else:
                 self._status = bt.Status.FAIL

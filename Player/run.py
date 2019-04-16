@@ -67,7 +67,7 @@ def init_workers():
     units = gc.my_units()
     for unit in units:
         my_units.append(Worker(
-            unit,
+            unit.id,
             gc,
             {
                 "karbonite_map": karbonite_map,
@@ -95,6 +95,10 @@ def init_maps():
             my_units_map[x].append(None)
 
 
+def remove_dead_units():
+    my_units[:] = [unit for unit in my_units if unit.unit()]
+
+
 if gc.planet() == bc.Planet.Earth:
     init_maps()
     init_workers()
@@ -104,6 +108,7 @@ while True:
     else:
         try:
             units = gc.my_units()
+            remove_dead_units()
             update_enemy_units_map(units)
             update_my_units_map(units)
             for unit in my_units:

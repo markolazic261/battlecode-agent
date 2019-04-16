@@ -9,12 +9,6 @@ class Healer(units.Unit):
         super().__init__(unit, gc)
         self._targeted_friend_id = None
 
-    def update_targeted_friend(self, id):
-        self._targeted_friend_id = id
-
-    def get_targeted_friend(self):
-        return self._targeted_friend_id
-
     def generate_tree(self):
         """Generates the tree for the knight."""
         tree = bt.FallBack()
@@ -45,8 +39,9 @@ class Healer(units.Unit):
 
         def condition(self):
             units = self.__outer._gc.units()
+            healer = self.__outer.unit()
             for unit in units:
-                if unit.unit_type != bc.UnitType.Factory and unit.id != self.__outer._unit.id and unit.health < unit.max_health:
+                if unit.unit_type != bc.UnitType.Factory and unit.id != healer.id and unit.health < unit.max_health:
                     return True
 
             return False
@@ -58,10 +53,11 @@ class Healer(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            location = self.__outer._unit.location.map_location()
-            nearby = self.__outer._gc.sense_nearby_units_by_team(location,self.__outer._unit.attack_range(), self.__outer._gc.team())
+            healer = self.__outer.unit()
+            location = healer.location.map_location()
+            nearby = self.__outer._gc.sense_nearby_units_by_team(location, healer.attack_range(), self.__outer._gc.team())
             for unit in nearby:
-                if unit.unit_type != bc.UnitType.Factory and unit.id != self.__outer._unit.id and unit.health < unit.max_health:
+                if unit.unit_type != bc.UnitType.Factory and unit.id != healer.id and unit.health < unit.max_health:
                     return True
             return False
 
@@ -72,12 +68,13 @@ class Healer(units.Unit):
             self.__outer = outer
 
         def action(self):
-            location = self.__outer._unit.location.map_location()
-            nearby = self.__outer._gc.sense_nearby_units_by_team(location,self.__outer._unit.attack_range(), self.__outer._gc.team())
+            healer = self.__outer.unit()
+            location = healer.location.map_location()
+            nearby = self.__outer._gc.sense_nearby_units_by_team(location, healer.attack_range(), self.__outer._gc.team())
             lowestHealthProcentage = 1
             highestPrioUnit = None
             for unit in nearby:
-                if unit.unit_type != bc.UnitType.Factory and unit.id != self.__outer._unit.id and unit.health < unit.max_health:
+                if unit.unit_type != bc.UnitType.Factory and unit.id != healer.id and unit.health < unit.max_health:
                     currentHealthProcentage = unit.health/unit.max_health
                     if currentHealthProcentage < lowestHealthProcentage:
                         lowestHealthProcentage = currentHealthProcentage
@@ -113,8 +110,9 @@ class Healer(units.Unit):
 
         def action(self):
             random_dir = random.choice(list(bc.Direction))
-            if self.__outer._gc.is_move_ready(self.__outer._unit.id) and self.__outer._gc.can_move(self.__outer._unit.id, random_dir):
-                self.__outer._gc.move_robot(self.__outer._unit.id, random_dir)
+            healer = self.__outer.unit()
+            if self.__outer._gc.is_move_ready(healer.id) and self.__outer._gc.can_move(healer.id, random_dir):
+                self.__outer._gc.move_robot(healer.id, random_dir)
                 self._status = bt.Status.SUCCESS
             else:
                 self._status = bt.Status.FAIL

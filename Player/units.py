@@ -27,7 +27,11 @@ class Unit(ABC):
             return None
 
     def unit(self):
-        return self.get_unit_from_id(self._unit)
+        units = self._gc.my_units()
+        for unit in units:
+            if unit.id == self._unit:
+                return unit
+        return None
 
     def run(self):
         """Runs the unit's behaviour tree and returns the result."""
