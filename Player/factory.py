@@ -5,6 +5,7 @@ import strategy
 import units
 from worker import Worker
 from knight import Knight
+from healer import Healer
 
 
 class Factory(units.Unit):
@@ -88,6 +89,11 @@ class Factory(units.Unit):
                             ))
                         elif unit.unit_type == bc.UnitType.Knight:
                             self.__outer._my_units.append(Knight(
+                                unit,
+                                self.__outer._gc
+                            ))
+                        elif unit.unit_type == bc.UnitType.Healer:
+                            self.__outer._my_units.append(Healer(
                                 unit,
                                 self.__outer._gc
                             ))
