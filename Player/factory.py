@@ -7,6 +7,7 @@ from worker import Worker
 from knight import Knight
 from healer import Healer
 from ranger import Ranger
+from mage import Mage
 
 
 class Factory(units.Unit):
@@ -104,6 +105,12 @@ class Factory(units.Unit):
                             self.__outer._my_units.append(Ranger(
                                 unit.id,
                                 self.__outer._gc
+                            ))
+                        elif unit.unit_type == bc.UnitType.Mage:
+                            self.__outer._my_units.append(Mage(
+                                unit.id,
+                                self.__outer._gc,
+                                self.__outer._maps
                             ))
             self._status = bt.Status.SUCCESS
 
