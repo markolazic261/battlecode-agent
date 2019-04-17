@@ -2,12 +2,17 @@ import battlecode as bc
 import behaviour_tree as bt
 import random
 import units
+import math
+import astar
 
 class Healer(units.Unit):
     """The container for the healer unit."""
-    def __init__(self, unit, gc):
+    def __init__(self, unit, gc, maps):
         super().__init__(unit, gc)
+        self._maps = maps
+        self._healing_friend = None
         self._targeted_friend = None
+        self._path_to_follow = None
 
     def generate_tree(self):
         """Generates the tree for the knight."""
@@ -21,6 +26,14 @@ class Healer(units.Unit):
         injured_friend_in_range_sequence.add_child(self.InjuredFriendInRange(self))
         injured_friend_in_range_sequence.add_child(self.FindHighestPriorityFriend(self))
         injured_friend_in_range_sequence.add_child(self.Heal(self))
+
+        find_injured_friend_sequence = bt.Sequence()
+        find_injured_friend_sequence.add_child(self.FindClosestInjuredFriend(self))
+        find_injured_friend_sequence.add_child(self.CreatePath(self))
+
+
+        friend_fallback.add_child(find_injured_friend_sequence)
+
 
         # Random movement
         move_randomly = self.MoveRandomly(self)
@@ -38,7 +51,7 @@ class Healer(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            units = self.__outer._gc.units()
+            units = self.__outer._gc.my_units()
             healer = self.__outer.unit()
             for unit in units:
                 if unit.unit_type != bc.UnitType.Factory and unit.id != healer.id and unit.health < unit.max_health:
@@ -59,6 +72,7 @@ class Healer(units.Unit):
             for unit in nearby:
                 if unit.unit_type != bc.UnitType.Factory and unit.id != healer.id and unit.health < unit.max_health:
                     return True
+
             return False
 
     class FindHighestPriorityFriend(bt.Action):
@@ -81,7 +95,7 @@ class Healer(units.Unit):
                         highestPrioUnit = unit.id
 
             if highestPrioUnit:
-                self.__outer._targeted_friend = highestPrioUnit
+                self.__outer._healing_friend = highestPrioUnit
                 self._status = bt.Status.SUCCESS
             else:
                 self._status = bt.Status.FAIL
@@ -93,8 +107,11 @@ class Healer(units.Unit):
             self.__outer = outer
 
         def action(self):
-            friend = self.__outer.get_friendly_unit(self.__outer._targeted_friend)
+            friend = self.__outer.get_friendly_unit(self.__outer._healing_friend)
             unit = self.__outer.unit()
+
+            self.__outer._path_to_follow = None
+            self.__outer._targeted_friend = None
 
             if not friend:
                 self._status = bt.Status.FAIL
@@ -103,10 +120,85 @@ class Healer(units.Unit):
                     self.__outer._gc.heal(unit.id, friend.id)
                     print('friend healed')
                     if friend.health == friend.max_health:
-                        self.__outer._targeted_friend = None
+                        self.__outer._healing_friend = None
                     self._status = bt.Status.SUCCESS
                 else:
                     self._status = bt.Status.RUNNING
+
+    class FindClosestInjuredFriend(bt.Action):
+        """Find the closest injured friend"""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            units = self.__outer._gc.my_units()
+            healer = self.__outer.unit()
+            healer_location = healer.location.map_location()
+
+            min_distance = math.inf
+            min_unit_id = None
+            for unit in units:
+                if not unit.location.is_on_map():
+                    continue
+                if unit.unit_type != bc.UnitType.Factory and unit.id != healer.id and unit.health < unit.max_health:
+                    current_distance = healer_location.distance_squared_to(unit.location.map_location())
+                    if current_distance < min_distance:
+                        min_distance = current_distance
+                        min_unit_id = unit.id
+
+            if min_unit_id:
+                print(min_unit_id)
+                self._status = bt.Status.SUCCESS
+                self.__outer._targeted_friend = min_unit_id
+            else:
+                self._status = bt.Status.FAIL
+
+    class CreatePath(bt.Action):
+        """Create path to closest injured friend"""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            friend = self.__outer.get_friendly_unit(self.__outer._targeted_friend)
+            healer = self.__outer.unit()
+            terrain_map = self.__outer._maps['terrain_map']
+            my_units_map = self.__outer._maps['my_units_map']
+            path = astar.astar(terrain_map, my_units_map, healer.location.map_location(), friend.location.map_location())
+            print(len(path))
+            if len(path) > 0:
+                path.pop(0) # Remove the point the unit is already on
+                self.__outer._path_to_follow = path
+                self._status = bt.Status.SUCCESS
+            else:
+                self.__outer._path_to_follow = None
+                self._status = bt.Status.FAIL
+
+
+    class MoveOnPath(bt.Action):
+        """Create path to closest injured friend"""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            next_point = self.__outer._path_to_follow[0]
+            healer = self.__outer.unit()
+            unit_map_location = healer.location.map_location()
+            move_direction = unit_map_location.direction_to(next_point)
+            if self.__outer._gc.can_move(healer.id, move_direction):
+                self._status = bt.Status.RUNNING
+                if self.__outer._gc.is_move_ready(healer.id):
+                    print('moved')
+                    self.__outer._gc.move_robot(healer.id, move_direction)
+                    self.__outer._path_to_follow.pop(0)
+                    if len(self.__outer._path_to_follow) == 1:
+                        self.__outer._path_to_follow = None
+                        self._status = bt.Status.SUCCESS
+            else:
+                self.__outer._path_to_follow = None
+                self._status = bt.Status.FAIL
 
 
 

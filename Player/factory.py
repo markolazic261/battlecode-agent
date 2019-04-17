@@ -96,7 +96,8 @@ class Factory(units.Unit):
                         elif unit.unit_type == bc.UnitType.Healer:
                             self.__outer._my_units.append(Healer(
                                 unit.id,
-                                self.__outer._gc
+                                self.__outer._gc,
+                                self.__outer._maps
                             ))
             self._status = bt.Status.SUCCESS
 
