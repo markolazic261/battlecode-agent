@@ -11,7 +11,7 @@ class Healer(units.Unit):
         super().__init__(unit, gc)
         self._maps = maps
         self._healing_friend = None
-        self._targeted_friend = None
+        self._targeted_location = None
         self._path_to_follow = None
 
     def generate_tree(self):
@@ -30,10 +30,10 @@ class Healer(units.Unit):
         find_injured_friend_sequence = bt.Sequence()
         find_injured_friend_sequence.add_child(self.FindClosestInjuredFriend(self))
         find_injured_friend_sequence.add_child(self.CreatePath(self))
-
+        find_injured_friend_sequence.add_child(self.MoveOnPath(self))
+        find_injured_friend_sequence.add_child(injured_friend_in_range_sequence)
 
         friend_fallback.add_child(find_injured_friend_sequence)
-
 
         # Random movement
         move_randomly = self.MoveRandomly(self)
@@ -111,7 +111,7 @@ class Healer(units.Unit):
             unit = self.__outer.unit()
 
             self.__outer._path_to_follow = None
-            self.__outer._targeted_friend = None
+            self.__outer._targeted_location = None
 
             if not friend:
                 self._status = bt.Status.FAIL
@@ -135,6 +135,9 @@ class Healer(units.Unit):
             units = self.__outer._gc.my_units()
             healer = self.__outer.unit()
             healer_location = healer.location.map_location()
+            my_units_map = self.__outer._maps['my_units_map']
+            width = len(my_units_map)
+            height = len(my_units_map[0])
 
             min_distance = math.inf
             min_unit_id = None
@@ -148,9 +151,22 @@ class Healer(units.Unit):
                         min_unit_id = unit.id
 
             if min_unit_id:
-                print(min_unit_id)
-                self._status = bt.Status.SUCCESS
-                self.__outer._targeted_friend = min_unit_id
+
+                unit_range = healer.attack_range()
+                position_found = False
+                while not position_found:
+                    for x in range(-unit_range , unit_range  + 1):
+                        for y in range(-unit_range , unit_range + 1):
+                            possible_location = healer_location.translate(x,y)
+
+                            # Check if location is outside of the map
+                            if possible_location.x < 0 or possible_location.y < 0 or possible_location.x >= width or possible_location.y >= height:
+                                continue
+                            if not my_units_map[possible_location.x][possible_location.y]:
+                                position_found = True
+                                self.__outer._targeted_location = possible_location
+                                self._status = bt.Status.SUCCESS
+                                return
             else:
                 self._status = bt.Status.FAIL
 
@@ -161,12 +177,11 @@ class Healer(units.Unit):
             self.__outer = outer
 
         def action(self):
-            friend = self.__outer.get_friendly_unit(self.__outer._targeted_friend)
+            location = self.__outer._targeted_location
             healer = self.__outer.unit()
             terrain_map = self.__outer._maps['terrain_map']
             my_units_map = self.__outer._maps['my_units_map']
-            path = astar.astar(terrain_map, my_units_map, healer.location.map_location(), friend.location.map_location())
-            print(len(path))
+            path = astar.astar(terrain_map, my_units_map, healer.location.map_location(), location, max_path_length=10)
             if len(path) > 0:
                 path.pop(0) # Remove the point the unit is already on
                 self.__outer._path_to_follow = path
@@ -190,7 +205,7 @@ class Healer(units.Unit):
             if self.__outer._gc.can_move(healer.id, move_direction):
                 self._status = bt.Status.RUNNING
                 if self.__outer._gc.is_move_ready(healer.id):
-                    print('moved')
+                    print('moved on path')
                     self.__outer._gc.move_robot(healer.id, move_direction)
                     self.__outer._path_to_follow.pop(0)
                     if len(self.__outer._path_to_follow) == 1:

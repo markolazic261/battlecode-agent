@@ -1,5 +1,6 @@
 import battlecode as bc
 import sys
+import math
 
 
 directions = [dir for dir in bc.Direction if dir is not bc.Direction.Center]
@@ -20,7 +21,7 @@ class Node():
         return ((self.position.x == other.position.x) and (self.position.y == other.position.y))
 
 
-def astar(maze,friendly_units, start, end):
+def astar(maze,friendly_units, start, end, max_path_length=math.inf):
     """Returns a list of tuples as a path from the given start to the given end in the given maze"""
     # Create start and end node
     start_node = Node(None, start)
@@ -57,7 +58,7 @@ def astar(maze,friendly_units, start, end):
         #print('Closed list: ', [p.position for p in closed_list])
 
         # Found the goal
-        if current_node == end_node:
+        if current_node == end_node or current_node.g > max_path_length :
             path = []
             current = current_node
             while current is not None:
