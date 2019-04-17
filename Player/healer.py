@@ -45,7 +45,7 @@ class Healer(units.Unit):
 
 
     class ExistsInjuredFriend(bt.Condition):
-        """Check if there is an injured frind"""
+        """Check if there is an injured friend at all."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -60,7 +60,7 @@ class Healer(units.Unit):
             return False
 
     class InjuredFriendInRange(bt.Condition):
-        """Check if there is an injured frind"""
+        """Check if there is an injured friend nearby the healer."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -76,7 +76,7 @@ class Healer(units.Unit):
             return False
 
     class FindHighestPriorityFriend(bt.Action):
-        """Find the injured friend with highest heal priority (just now only health is cheched)"""
+        """Find the injured friend with the highest heal priority (lowest health)."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -85,23 +85,23 @@ class Healer(units.Unit):
             healer = self.__outer.unit()
             location = healer.location.map_location()
             nearby = self.__outer._gc.sense_nearby_units_by_team(location, healer.attack_range(), self.__outer._gc.team())
-            lowestHealthProcentage = 1
-            highestPrioUnit = None
+            lowest_health_percentage = 1
+            highest_prio_unit = None
             for unit in nearby:
                 if unit.unit_type != bc.UnitType.Factory and unit.id != healer.id and unit.health < unit.max_health:
-                    currentHealthProcentage = unit.health / unit.max_health
-                    if currentHealthProcentage < lowestHealthProcentage:
-                        lowestHealthProcentage = currentHealthProcentage
-                        highestPrioUnit = unit.id
+                    current_health_percentage = unit.health / unit.max_health
+                    if current_health_percentage < lowest_health_percentage:
+                        lowest_health_percentage = current_health_percentage
+                        highest_prio_unit = unit.id
 
-            if highestPrioUnit:
-                self.__outer._healing_friend = highestPrioUnit
+            if highest_prio_unit:
+                self.__outer._healing_friend = highest_prio_unit
                 self._status = bt.Status.SUCCESS
             else:
                 self._status = bt.Status.FAIL
 
     class Heal(bt.Action):
-        """Heal targeted friendly unit"""
+        """Heal the targeted friendly unit."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -110,6 +110,7 @@ class Healer(units.Unit):
             friend = self.__outer.get_friendly_unit(self.__outer._healing_friend)
             unit = self.__outer.unit()
 
+            # Path no longer necessary when healing.
             self.__outer._path_to_follow = None
             self.__outer._targeted_location = None
 
@@ -126,7 +127,7 @@ class Healer(units.Unit):
                     self._status = bt.Status.RUNNING
 
     class FindClosestInjuredFriend(bt.Action):
-        """Find the closest injured friend"""
+        """Find the closest injured friend."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -153,15 +154,18 @@ class Healer(units.Unit):
             if min_unit_id:
                 unit_to_follow = self.__outer.get_friendly_unit(min_unit_id)
                 unit_to_follow_location = unit_to_follow.location.map_location()
-                unit_range = math.floor(math.sqrt(healer.attack_range()))
+                unit_range = math.floor(math.sqrt(healer.attack_range() / 2))
                 position_found = False
                 while not position_found:
                     for x in range(-unit_range , unit_range  + 1):
                         for y in range(-unit_range , unit_range + 1):
                             possible_location = unit_to_follow_location.translate(x,y)
-                            # Check if location is outside of the map
+
+                            # Check if the location is outside of the map.
                             if possible_location.x < 0 or possible_location.y < 0 or possible_location.x >= width or possible_location.y >= height:
                                 continue
+
+                            # If no unit occupies this spot, go towards it.
                             if not my_units_map[possible_location.x][possible_location.y]:
                                 position_found = True
                                 self.__outer._targeted_location = possible_location
@@ -171,7 +175,7 @@ class Healer(units.Unit):
                 self._status = bt.Status.FAIL
 
     class CreatePath(bt.Action):
-        """Create path to closest injured friend"""
+        """Create the path to the closest injured friend."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -183,7 +187,7 @@ class Healer(units.Unit):
             my_units_map = self.__outer._maps['my_units_map']
             path = astar.astar(terrain_map, my_units_map, healer.location.map_location(), location, max_path_length=10)
             if len(path) > 0:
-                path.pop(0) # Remove the point the unit is already on
+                path.pop(0) # Remove the point the unit is already on.
                 self.__outer._path_to_follow = path
                 self._status = bt.Status.SUCCESS
             else:
@@ -192,7 +196,7 @@ class Healer(units.Unit):
 
 
     class MoveOnPath(bt.Action):
-        """Create path to closest injured friend"""
+        """Move towards the injured friend."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -213,9 +217,6 @@ class Healer(units.Unit):
             else:
                 self.__outer._path_to_follow = None
                 self._status = bt.Status.FAIL
-
-
-
 
     #################
     # MOVE RANDOMLY #
