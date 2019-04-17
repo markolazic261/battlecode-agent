@@ -163,9 +163,27 @@ class Worker(units.Unit):
             self.__outer = outer
 
         def action(self):
-            ### TODO: Smart way for escaping enemies
-            #print("should run from enemies")
-            self._status = bt.Status.FAIL
+            worker = self.__outer.unit()
+            enemy = None
+            location = worker.location
+            if location.is_on_map():
+                # Determines if we can see some enemy units beside workers and factories.
+                enemy_team = bc.Team.Red if self.__outer._gc.team() == bc.Team.Blue else bc.Team.Blue
+                nearby_enemy_units = self.__outer._gc.sense_nearby_units_by_team(location.map_location(), worker.vision_range, enemy_team)
+                for nearby_enemy in nearby_enemy_units:
+                    if nearby_enemy.unit_type != bc.UnitType.Factory and nearby_enemy.unit_type != bc.UnitType.Worker:
+                        enemy = nearby_enemy
+                        break
+
+            if enemy:
+                enemy_direction = worker.location.map_location().direction_to(enemy.location.map_location())
+                opposite_direction_position = worker.location.map_location().subtract(enemy_direction)
+                opposite_direction = worker.location.map_location().direction_to(opposite_direction_position)
+                if self.__outer._gc.is_move_ready(worker.id) and self.__outer._gc.can_move(worker.id, opposite_direction):
+                    self.__outer._gc.move_robot(worker.id, opposite_direction)
+                    self._status = bt.Status.SUCCESS
+                else:
+                    self._status = bt.Status.FAIL
 
     ##################
     # ADD BLUEPRINTS #
@@ -197,11 +215,35 @@ class Worker(units.Unit):
 
         def action(self):
             blueprint_added = False
-            # Check if we can place a blueprint in any adjacent cell
-            # TODO: Make this a bit smarter to chose a place for factory
             worker = self.__outer.unit()
             for dir in list(bc.Direction):
                 if self.__outer._gc.can_blueprint(worker.id, bc.UnitType.Factory, dir):
+                    proposed_placement = worker.location.map_location().add(dir)
+
+                    # Check that we have no adjacent factories.
+                    factory_too_close = False
+                    for unit in self.__outer._gc.sense_nearby_units_by_team(proposed_placement, 2, self.__outer._gc.team()):
+                        if unit.unit_type == bc.UnitType.Factory:
+                            factory_too_close = True
+                    if factory_too_close:
+                        continue
+
+                    # Check that we are not adjacent to impassable terrain
+                    factory_near_edge = False
+                    map = self.__outer._maps['terrain_map']
+                    for x in range(proposed_placement.x - 1, proposed_placement.x + 2):
+                        for y in range(proposed_placement.y - 1, proposed_placement.y + 2):
+                            if x < 0 or x >= len(map) or y < 0 or y >= len(map[x]):
+                                factory_near_edge = True
+                                break
+                            if not map[x][y]:
+                                factory_near_edge = True
+                                break
+                        if factory_near_edge:
+                            break
+                    if factory_near_edge:
+                        continue
+
                     self.__outer._gc.blueprint(worker.id, bc.UnitType.Factory, dir)
                     blueprint_added = True
                     break

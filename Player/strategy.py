@@ -129,7 +129,7 @@ class Strategy:
         # Determine the percent of all units created
         percentages = [(key, self.unit_information['current_amount'][key] / self.unit_information['max_amount'][key]) for key in self.unit_information['max_amount']]
         min_key = ''
-        min_value = 1
+        min_value = 100
 
         # Find the lowest percentage
         for percentage in percentages:
