@@ -118,6 +118,7 @@ class Healer(units.Unit):
             else:
                 if self.__outer._gc.is_heal_ready(unit.id) and self.__outer._gc.can_heal(unit.id, friend.id):
                     self.__outer._gc.heal(unit.id, friend.id)
+                    friend = self.__outer.get_friendly_unit(self.__outer._healing_friend)
                     if friend.health == friend.max_health:
                         self.__outer._healing_friend = None
                     self._status = bt.Status.SUCCESS
@@ -150,14 +151,14 @@ class Healer(units.Unit):
                         min_unit_id = unit.id
 
             if min_unit_id:
-
-                unit_range = healer.attack_range()
+                unit_to_follow = self.__outer.get_friendly_unit(min_unit_id)
+                unit_to_follow_location = unit_to_follow.location.map_location()
+                unit_range = math.floor(math.sqrt(healer.attack_range()))
                 position_found = False
                 while not position_found:
                     for x in range(-unit_range , unit_range  + 1):
                         for y in range(-unit_range , unit_range + 1):
-                            possible_location = healer_location.translate(x,y)
-
+                            possible_location = unit_to_follow_location.translate(x,y)
                             # Check if location is outside of the map
                             if possible_location.x < 0 or possible_location.y < 0 or possible_location.x >= width or possible_location.y >= height:
                                 continue
