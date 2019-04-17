@@ -231,13 +231,17 @@ class Worker(units.Unit):
                     # Check that we are not adjacent to impassable terrain
                     edge_amount = 0
                     map = self.__outer._maps['terrain_map']
-                    for x in range(proposed_placement.x - 1, proposed_placement.x + 2):
-                        for y in range(proposed_placement.y - 1, proposed_placement.y + 2):
-                            if x < 0 or x >= len(map) or y < 0 or y >= len(map[x]):
-                                edge_amount += 1
-                            elif not map[x][y]:
-                                edge_amount += 1
-                    if edge_amount > 3:
+                    width = len(map)
+                    height = len(map[0])
+                    x = proposed_placement.x
+                    y = proposed_placement.y
+                    if (x < 0 or y < 0 or not map[x-1][y-1]) and (x >= width or y >= height or not map[x+1][y+1]):
+                        continue
+                    if (y < 0 or not map[x][y-1]) and (y >= height or not map[x][y+1]):
+                        continue
+                    if (x >= width or y < 0 or not map[x+1][y-1]) and (x < 0 or y >= height or not map[x-1][y+1]):
+                        continue
+                    if (x < 0 or not map[x-1][y]) and (x >= width or not map[x+1][y]):
                         continue
 
                     self.__outer._gc.blueprint(worker.id, bc.UnitType.Factory, dir)
