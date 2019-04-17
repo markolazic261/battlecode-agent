@@ -67,6 +67,7 @@ class Ranger(units.Unit):
             range = ranger.vision_range
             location = ranger.location.map_location()
             team = ranger.team
+            enemy_team = bc.Team.Red if team == bc.Team.Blue else bc.Team.Blue
 
             # If already have a targeted enemy which is in range, return True
             enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
@@ -76,11 +77,10 @@ class Ranger(units.Unit):
                 self.__outer._targeted_enemy = None
 
             # No saved enemy, look for new ones
-            nearby_units = self.__outer._gc.sense_nearby_units(location, range)
+            nearby_units = self.__outer._gc.sense_nearby_units_by_team(location, range, enemy_team)
             for unit in nearby_units:
-                if unit.team != team:
-                    self.__outer._targeted_enemy = unit.id
-                    return True
+                self.__outer._targeted_enemy = unit.id
+                return True
             return False
 
     class EnemyInAttackRange(bt.Condition):
