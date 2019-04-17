@@ -6,7 +6,7 @@ import math
 
 
 class Mage(units.Unit):
-    """The container for the ranger unit."""
+    """The container for the mage unit."""
     def __init__(self, unit, gc, maps):
         super().__init__(unit, gc)
         self._targeted_enemy = None
@@ -36,7 +36,7 @@ class Mage(units.Unit):
     ##################
 
     class EnemyVisible(bt.Condition):
-        """Check if there is an enemy in range of the ranger."""
+        """Check if there is an enemy in range of the mage."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -74,14 +74,18 @@ class Mage(units.Unit):
                 current_target_nr_enemies = 0
                 current_target_hp = 0
                 enemy_location = enemy.location.map_location()
+                # get number of adjacent enemies
                 for dir in list(bc.Direction):
                     adj_location = enemy_location.add(dir)
                     if self.__outer._gc.has_unit_at_location(adj_location) and not my_units_map[adj_location.x][adj_location.y]:
                         current_target_nr_enemies += 1
+                        current_target_hp += self.__outer._gc.sense_unit_at_location(adj_location).health
+                # update target with more enemies found
                 if current_target_nr_enemies > best_target_nr_enemies:
                     best_target_nr_enemies = current_target_nr_enemies
                     best_taget_hp = current_target_hp
                     best_target_id = enemy.id
+                # if same number of enemies at target take the one with lowest combined hp
                 elif current_target_nr_enemies == best_target_nr_enemies and current_target_hp < best_taget_hp:
                     best_target_nr_enemies = current_target_nr_enemies
                     best_taget_hp = current_target_hp
