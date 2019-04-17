@@ -118,7 +118,6 @@ class Healer(units.Unit):
             else:
                 if self.__outer._gc.is_heal_ready(unit.id) and self.__outer._gc.can_heal(unit.id, friend.id):
                     self.__outer._gc.heal(unit.id, friend.id)
-                    print('friend healed')
                     if friend.health == friend.max_health:
                         self.__outer._healing_friend = None
                     self._status = bt.Status.SUCCESS
@@ -205,7 +204,6 @@ class Healer(units.Unit):
             if self.__outer._gc.can_move(healer.id, move_direction):
                 self._status = bt.Status.RUNNING
                 if self.__outer._gc.is_move_ready(healer.id):
-                    print('moved on path')
                     self.__outer._gc.move_robot(healer.id, move_direction)
                     self.__outer._path_to_follow.pop(0)
                     if len(self.__outer._path_to_follow) == 1:
