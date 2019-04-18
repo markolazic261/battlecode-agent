@@ -51,7 +51,7 @@ def update_enemy_units_map(units):
             nearby = gc.sense_nearby_units_by_team(location.map_location(), unit.vision_range, enemy_team)
             for enemy in nearby:
                 map_location = enemy.location.map_location()
-                enemy_units_map[map_location.x][map_location.y] = unit
+                enemy_units_map[map_location.x][map_location.y] = enemy
 
 
 def update_karbonite_map(unit_location, range):

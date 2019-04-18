@@ -115,6 +115,7 @@ class Knight(units.Unit):
         def action(self):
             enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
             knight = self.__outer.unit()
+            enemies_map = self.__outer._maps['enemy_units_map']
 
             if not enemy:
                 self._status = bt.Status.FAIL
@@ -122,6 +123,19 @@ class Knight(units.Unit):
                 if self.__outer._gc.is_attack_ready(knight.id) and self.__outer._gc.can_attack(knight.id, enemy.id):
                     self.__outer._gc.attack(knight.id, enemy.id)
                     self._status = bt.Status.SUCCESS
+
+                     # Remove enemy from enemy_units_map if it died
+                    location = knight.location.map_location()
+                    enemy_team = bc.Team.Red if knight.team == bc.Team.Blue else bc.Team.Blue
+                    killed_enemy = True
+                    nearby_units = self.__outer._gc.sense_nearby_units_by_team(location, 2, enemy_team)
+                    for nearby_unit in nearby_units:
+                        if nearby_unit.id == enemy.id:
+                            killed_enemy = False
+                            break
+                    if killed_enemy:
+                        enemy_location = enemy.location.map_location()
+                        enemies_map[enemy_location.x][enemy_location.y] = None
                 else:
                     self._status = bt.Status.RUNNING
 
@@ -154,6 +168,7 @@ class Knight(units.Unit):
         def action(self):
             enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
             knight = self.__outer.unit()
+            enemies_map = self.__outer._maps['enemy_units_map']
 
             if not enemy:
                 self._status = bt.Status.FAIL
@@ -161,6 +176,19 @@ class Knight(units.Unit):
                 if self.__outer._gc.is_javelin_ready(knight.id) and self.__outer._gc.can_javelin(knight.id, enemy.id):
                     self.__outer._gc.javelin(knight.id, enemy.id)
                     self._status = bt.Status.SUCCESS
+
+                     # Remove enemy from enemy_units_map if it died
+                    location = knight.location.map_location()
+                    enemy_team = bc.Team.Red if knight.team == bc.Team.Blue else bc.Team.Blue
+                    killed_enemy = True
+                    nearby_units = self.__outer._gc.sense_nearby_units_by_team(location, knight.ability_range(), enemy_team)
+                    for nearby_unit in nearby_units:
+                        if nearby_unit.id == enemy.id:
+                            killed_enemy = False
+                            break
+                    if killed_enemy:
+                        enemy_location = enemy.location.map_location()
+                        enemies_map[enemy_location.x][enemy_location.y] = None
                 else:
                     self._status = bt.Status.RUNNING
 
@@ -186,7 +214,6 @@ class Knight(units.Unit):
                     self._status = bt.Status.FAIL
 
     class FindClosestEnemy(bt.Action):
-        """Moves in the direction of the visible enemy."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
@@ -226,7 +253,8 @@ class Knight(units.Unit):
             terrain_map = self.__outer._maps['terrain_map']
             my_units_map = self.__outer._maps['my_units_map']
             path = astar.astar(terrain_map, my_units_map, knight.location.map_location(), location, max_path_length=5)
-
+            if len(path) == 1:
+                print(knight.location.map_location(), location)
             if len(path) > 3:
                 path.pop(0) # Remove the point the unit is already on.
                 self.__outer._path_to_follow = path
