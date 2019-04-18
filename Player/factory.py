@@ -93,7 +93,8 @@ class Factory(units.Unit):
                         elif unit.unit_type == bc.UnitType.Knight:
                             self.__outer._my_units.append(Knight(
                                 unit.id,
-                                self.__outer._gc
+                                self.__outer._gc,
+                                self.__outer._maps
                             ))
                         elif unit.unit_type == bc.UnitType.Healer:
                             self.__outer._my_units.append(Healer(
