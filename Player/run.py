@@ -112,7 +112,8 @@ while True:
             update_enemy_units_map(units)
             update_my_units_map(units)
             for unit in my_units:
-                unit.run()
+                if unit.unit():
+                    unit.run()
         except Exception as e:
             print('Error:', e)
             # use this to show where the error was
