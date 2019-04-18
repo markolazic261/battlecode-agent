@@ -94,13 +94,13 @@ class Knight(units.Unit):
 
         def action(self):
             enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
-            unit = self.__outer.unit()
+            knight = self.__outer.unit()
 
             if not enemy:
                 self._status = bt.Status.FAIL
             else:
-                if self.__outer._gc.is_attack_ready(unit.id) and self.__outer._gc.can_attack(unit.id, enemy.id):
-                    self.__outer._gc.attack(unit.id, enemy.id)
+                if self.__outer._gc.is_attack_ready(knight.id) and self.__outer._gc.can_attack(knight.id, enemy.id):
+                    self.__outer._gc.attack(knight.id, enemy.id)
                     self._status = bt.Status.SUCCESS
 
                     # Remove targeted enemy if it died
@@ -117,46 +117,46 @@ class Knight(units.Unit):
                     self._status = bt.Status.RUNNING
 
     class CanJavelin(bt.Condition):
-        """ Check if knight can perform javelin attack """
+        """Check if the knight can perform a javelin attack."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def condition(self):
-            unit = self.__outer.unit()
-            if unit.research_level < 3:
-                return False
+            knight = self.__outer.unit()
             enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
+
+            if knight.research_level < 3:
+                return False
 
             if not enemy:
                 return False
 
-            distance = unit.location.map_location().distance_squared_to(enemy.location.map_location())
-
-            return distance <= unit.ability_range()
+            distance = knight.location.map_location().distance_squared_to(enemy.location.map_location())
+            return distance <= knight.ability_range()
 
 
     class Javelin(bt.Action):
-        """ Javelin """
+        """Perform the javelin attack."""
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def action(self):
             enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
-            unit = self.__outer.unit()
+            knight = self.__outer.unit()
 
             if not enemy:
                 self._status = bt.Status.FAIL
             else:
-                if self.__outer._gc.is_javelin_ready(unit.id) and self.__outer._gc.can_javelin(unit.id, enemy.id):
-                    self.__outer._gc.javelin(unit.id, enemy.id)
+                if self.__outer._gc.is_javelin_ready(knight.id) and self.__outer._gc.can_javelin(knight.id, enemy.id):
+                    self.__outer._gc.javelin(knight.id, enemy.id)
                     self._status = bt.Status.SUCCESS
 
                     # Remove targeted enemy if it died
                     location = unit.location.map_location()
                     killed_enemy = True
-                    nearby_units = self.__outer._gc.sense_nearby_units(location, unit.vision_range)
+                    nearby_units = self.__outer._gc.sense_nearby_units(location, knight.vision_range)
                     for nearby_unit in nearby_units:
                         if nearby_unit.id == enemy.id:
                             killed_enemy = False
@@ -175,14 +175,14 @@ class Knight(units.Unit):
 
         def action(self):
             enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
-            unit = self.__outer.unit()
+            knight = self.__outer.unit()
 
             if not enemy:
                 self._status = bt.Status.FAIL
             else:
-                enemy_direction = unit.location.map_location().direction_to(enemy.location.map_location())
-                if self.__outer._gc.is_move_ready(unit.id) and self.__outer._gc.can_move(unit.id, enemy_direction):
-                    self.__outer._gc.move_robot(unit.id, enemy_direction)
+                enemy_direction = knight.location.map_location().direction_to(enemy.location.map_location())
+                if self.__outer._gc.is_move_ready(knight.id) and self.__outer._gc.can_move(knight.id, enemy_direction):
+                    self.__outer._gc.move_robot(knight.id, enemy_direction)
                     self._status = bt.Status.SUCCESS
                 else:
                     self._status = bt.Status.FAIL
@@ -199,9 +199,9 @@ class Knight(units.Unit):
 
         def action(self):
             random_dir = random.choice(list(bc.Direction))
-            unit = self.__outer.unit()
-            if self.__outer._gc.is_move_ready(unit.id) and self.__outer._gc.can_move(unit.id, random_dir):
-                self.__outer._gc.move_robot(unit.id, random_dir)
+            knight = self.__outer.unit()
+            if self.__outer._gc.is_move_ready(knight.id) and self.__outer._gc.can_move(knight.id, random_dir):
+                self.__outer._gc.move_robot(knight.id, random_dir)
                 self._status = bt.Status.SUCCESS
             else:
                 self._status = bt.Status.FAIL
