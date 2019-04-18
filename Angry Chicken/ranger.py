@@ -69,19 +69,27 @@ class Ranger(units.Unit):
             team = ranger.team
             enemy_team = bc.Team.Red if team == bc.Team.Blue else bc.Team.Blue
 
-            # If already have a targeted enemy which is in range, return True
-            enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
-            if enemy and location.distance_squared_to(enemy.location.map_location()) <= range:
-                return True
-            else:
-                self.__outer._targeted_enemy = None
-
-            # No saved enemy, look for new ones
             nearby_units = self.__outer._gc.sense_nearby_units_by_team(location, range, enemy_team)
+
+            # No enemy visible
+            if not nearby_units:
+                return False
+
+            # Look for the enemy closest to the ranger with lowest health
+            best_enemy = nearby_units[0]
+            best_enemy_distance = location.distance_squared_to(best_enemy.location.map_location())
             for unit in nearby_units:
-                self.__outer._targeted_enemy = unit.id
-                return True
-            return False
+                enemy_distance = location.distance_squared_to(unit.location.map_location())
+                if enemy_distance < best_enemy_distance:
+                    best_enemy = unit
+                    best_enemy_distance = enemy_distance
+                elif enemy_distance == best_enemy_distance:
+                    if unit.health < best_enemy.health:
+                        best_enemy = unit
+                        best_enemy_distance = enemy_distance
+
+            self.__outer._targeted_enemy = best_enemy.id
+            return True
 
     class EnemyInAttackRange(bt.Condition):
         """Check if the enemy is in attack range of the ranger."""
@@ -113,18 +121,6 @@ class Ranger(units.Unit):
                 if self.__outer._gc.is_attack_ready(ranger.id) and self.__outer._gc.can_attack(ranger.id, enemy.id):
                     self.__outer._gc.attack(ranger.id, enemy.id)
                     self._status = bt.Status.SUCCESS
-
-                    # Remove targeted enemy if it died
-                    location = ranger.location.map_location()
-                    range = ranger.vision_range
-                    killed_enemy = True
-                    nearby_units = self.__outer._gc.sense_nearby_units(location, range)
-                    for nearby_unit in nearby_units:
-                        if nearby_unit.id == enemy.id:
-                            killed_enemy = False
-                            break
-                    if killed_enemy:
-                        self.__outer._targeted_enemy = None
                 else:
                     self._status = bt.Status.RUNNING
 

@@ -148,13 +148,11 @@ class Strategy:
 
         # Find the lowest percentage
         for percentage in percentages:
-            if percentage[0] != 'factory' and percentage[1] < min_value:
+            if percentage[0] != 'factory' and percentage[0] != 'worker' and percentage[1] < min_value:
                 min_key = percentage[0]
                 min_value = percentage[1]
 
-        if min_key == 'worker':
-            return bc.UnitType.Worker
-        elif min_key == 'healer':
+        if min_key == 'healer':
             return bc.UnitType.Healer
         elif min_key == 'knight':
             return bc.UnitType.Knight
