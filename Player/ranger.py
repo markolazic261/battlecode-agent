@@ -2,6 +2,8 @@ import battlecode as bc
 import behaviour_tree as bt
 import random
 import units
+import math
+import astar
 
 
 class Ranger(units.Unit):
@@ -9,6 +11,8 @@ class Ranger(units.Unit):
     def __init__(self, unit, gc, maps):
         super().__init__(unit, gc)
         self._targeted_enemy = None
+        self._targeted_location = None
+        self._path_to_follow = None
         self._maps = maps
 
     def generate_tree(self):
@@ -47,9 +51,14 @@ class Ranger(units.Unit):
         enemy_handling.add_child(enemy_fallback)
         tree.add_child(enemy_handling)
 
-        # Random movement
-        move_randomly = self.MoveRandomly(self)
-        tree.add_child(move_randomly)
+        move_fallback = bt.FallBack()
+        move_sequence = bt.Sequence()
+        move_sequence.add_child(self.FindClosestEnemy(self))
+        move_sequence.add_child(self.CreatePath(self))
+        move_sequence.add_child(self.MoveOnPath(self))
+        move_fallback.add_child(move_sequence)
+        move_fallback.add_child(self.MoveRandomly(self))
+        tree.add_child(move_fallback)
 
         return tree
 
@@ -207,6 +216,82 @@ class Ranger(units.Unit):
                     self._status = bt.Status.SUCCESS
                 else:
                     self._status = bt.Status.FAIL
+
+    class FindClosestEnemy(bt.Action):
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            ranger = self.__outer.unit()
+            ranger_location = ranger.location.map_location()
+            enemies_map = self.__outer._maps['enemy_units_map']
+
+            min_distance = math.inf
+            closest_unit_location = None
+            for x in range(len(enemies_map)):
+                for y in range(len(enemies_map[0])):
+                    enemy = enemies_map[x][y]
+                    if enemy:
+                        current_distance = ranger_location.distance_squared_to(enemy.location.map_location())
+
+                        # check just in case enemy desingregated its unit or we failed to attack for any reason
+                        if current_distance < ranger.vision_range:
+                            continue
+                        if current_distance < min_distance:
+                            min_distance = current_distance
+                            closest_unit_location = enemy.location.map_location()
+
+            if closest_unit_location:
+                self.__outer._targeted_location = closest_unit_location
+                self._status = bt.Status.SUCCESS
+            else:
+                self.__outer._targeted_location = None
+                self._status = bt.Status.FAIL
+
+    class CreatePath(bt.Action):
+        """Create the path to the closest injured friend."""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            location = self.__outer._targeted_location
+            ranger = self.__outer.unit()
+            terrain_map = self.__outer._maps['terrain_map']
+            my_units_map = self.__outer._maps['my_units_map']
+            path = astar.astar(terrain_map, my_units_map, ranger.location.map_location(), location, max_path_length=5)
+
+            if len(path) > 0:
+                path.pop(0) # Remove the point the unit is already on.
+                self.__outer._path_to_follow = path
+                self._status = bt.Status.SUCCESS
+            else:
+                self.__outer._path_to_follow = None
+                self._status = bt.Status.FAIL
+
+    class MoveOnPath(bt.Action):
+        """Move towards the closest known enemy position."""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            next_point = self.__outer._path_to_follow[0]
+            ranger = self.__outer.unit()
+            unit_map_location = ranger.location.map_location()
+            move_direction = unit_map_location.direction_to(next_point)
+            if self.__outer._gc.can_move(ranger.id, move_direction):
+                self._status = bt.Status.RUNNING
+                if self.__outer._gc.is_move_ready(ranger.id):
+                    self.__outer._gc.move_robot(ranger.id, move_direction)
+                    self.__outer._path_to_follow.pop(0)
+                    if len(self.__outer._path_to_follow) == 1:
+                        self.__outer._path_to_follow = None
+                        self._status = bt.Status.SUCCESS
+            else:
+                self.__outer._path_to_follow = None
+                self._status = bt.Status.FAIL
 
     #################
     # MOVE RANDOMLY #

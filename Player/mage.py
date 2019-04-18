@@ -3,6 +3,7 @@ import behaviour_tree as bt
 import random
 import units
 import math
+import astar
 
 
 class Mage(units.Unit):
@@ -22,12 +23,22 @@ class Mage(units.Unit):
         attack_sequence.add_child(self.FindBestTarget(self))
         attack_sequence.add_child(self.Attack(self))
         enemy_visible_sequence.add_child(attack_sequence)
-        move_randomly_sequence = bt.Sequence()
-        move_randomly_sequence.add_child(self.MoveRandomly(self))
-        move_randomly_sequence.add_child(enemy_visible_sequence)
+
+        enemies_not_visible_sequence = bt.Sequence()
+
+        move_fallback = bt.FallBack()
+        move_sequence = bt.Sequence()
+        move_sequence.add_child(self.FindClosestEnemy(self))
+        move_sequence.add_child(self.CreatePath(self))
+        move_sequence.add_child(self.MoveOnPath(self))
+        move_fallback.add_child(move_sequence)
+        move_fallback.add_child(self.MoveRandomly(self))
+
+        enemies_not_visible_sequence.add_child(move_fallback)
+        enemies_not_visible_sequence.add_child(enemy_visible_sequence)
 
         tree.add_child(enemy_visible_sequence)
-        tree.add_child(move_randomly_sequence)
+        tree.add_child(enemies_not_visible_sequence)
 
         return tree
 
@@ -136,6 +147,84 @@ class Mage(units.Unit):
 
                 else:
                     self._status = bt.Status.RUNNING
+
+
+
+    class FindClosestEnemy(bt.Action):
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            mage = self.__outer.unit()
+            mage_location = mage.location.map_location()
+            enemies_map = self.__outer._maps['enemy_units_map']
+
+            min_distance = math.inf
+            closest_unit_location = None
+            for x in range(len(enemies_map)):
+                for y in range(len(enemies_map[0])):
+                    enemy = enemies_map[x][y]
+                    if enemy:
+                        current_distance = mage_location.distance_squared_to(enemy.location.map_location())
+
+                        # check just in case enemy desingregated its unit or we failed to attack for any reason
+                        if current_distance < mage.vision_range:
+                            continue
+                        if current_distance < min_distance:
+                            min_distance = current_distance
+                            closest_unit_location = enemy.location.map_location()
+
+            if closest_unit_location:
+                self.__outer._targeted_location = closest_unit_location
+                self._status = bt.Status.SUCCESS
+            else:
+                self.__outer._targeted_location = None
+                self._status = bt.Status.FAIL
+
+    class CreatePath(bt.Action):
+        """Create the path to the closest injured friend."""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            location = self.__outer._targeted_location
+            mage = self.__outer.unit()
+            terrain_map = self.__outer._maps['terrain_map']
+            my_units_map = self.__outer._maps['my_units_map']
+            path = astar.astar(terrain_map, my_units_map, mage.location.map_location(), location, max_path_length=5)
+
+            if len(path) > 0:
+                path.pop(0) # Remove the point the unit is already on.
+                self.__outer._path_to_follow = path
+                self._status = bt.Status.SUCCESS
+            else:
+                self.__outer._path_to_follow = None
+                self._status = bt.Status.FAIL
+
+    class MoveOnPath(bt.Action):
+        """Move towards the closest known enemy position."""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            next_point = self.__outer._path_to_follow[0]
+            mage = self.__outer.unit()
+            unit_map_location = mage.location.map_location()
+            move_direction = unit_map_location.direction_to(next_point)
+            if self.__outer._gc.can_move(mage.id, move_direction):
+                self._status = bt.Status.RUNNING
+                if self.__outer._gc.is_move_ready(mage.id):
+                    self.__outer._gc.move_robot(mage.id, move_direction)
+                    self.__outer._path_to_follow.pop(0)
+                    if len(self.__outer._path_to_follow) == 1:
+                        self.__outer._path_to_follow = None
+                        self._status = bt.Status.SUCCESS
+            else:
+                self.__outer._path_to_follow = None
+                self._status = bt.Status.FAIL
 
     #################
     # MOVE RANDOMLY #
