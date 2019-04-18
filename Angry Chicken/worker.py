@@ -235,13 +235,13 @@ class Worker(units.Unit):
                     height = len(map[0])
                     x = proposed_placement.x
                     y = proposed_placement.y
-                    if (x < 0 or y < 0 or not map[x-1][y-1]) and (x >= width or y >= height or not map[x+1][y+1]):
+                    if (x-1 < 0 or y-1 < 0 or not map[x-1][y-1]) and (x+1 >= width or y+1 >= height or not map[x+1][y+1]):
                         continue
-                    if (y < 0 or not map[x][y-1]) and (y >= height or not map[x][y+1]):
+                    if (y-1 < 0 or not map[x][y-1]) and (y+1 >= height or not map[x][y+1]):
                         continue
-                    if (x >= width or y < 0 or not map[x+1][y-1]) and (x < 0 or y >= height or not map[x-1][y+1]):
+                    if (x+1 >= width or y-1 < 0 or not map[x+1][y-1]) and (x-1 < 0 or y+1 >= height or not map[x-1][y+1]):
                         continue
-                    if (x < 0 or not map[x-1][y]) and (x >= width or not map[x+1][y]):
+                    if (x-1 < 0 or not map[x-1][y]) and (x+1 >= width or not map[x+1][y]):
                         continue
 
                     self.__outer._gc.blueprint(worker.id, bc.UnitType.Factory, dir)
