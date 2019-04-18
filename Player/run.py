@@ -9,8 +9,7 @@ from knight import Knight
 import strategy
 
 gc = bc.GameController()
-gc.queue_research(bc.UnitType.Worker)
-gc.queue_research(bc.UnitType.Knight)
+
 directions = list(bc.Direction)
 karbonite_map = []
 enemy_units_map = []
@@ -102,6 +101,8 @@ def remove_dead_units():
 if gc.planet() == bc.Planet.Earth:
     init_maps()
     init_workers()
+    for research in strategy.Strategy.research_strategy:
+        gc.queue_research(research)
 while True:
     if gc.planet() == bc.Planet.Mars:
         gc.next_turn()

@@ -3,6 +3,20 @@ import battlecode as bc
 class Strategy:
     __instance = None
 
+
+    research_strategy = [
+        bc.UnitType.Worker,
+        bc.UnitType.Ranger,
+        bc.UnitType.Mage,
+        bc.UnitType.Knight,
+        bc.UnitType.Healer,
+        bc.UnitType.Ranger,
+        bc.UnitType.Mage,
+        bc.UnitType.Ranger,
+        bc.UnitType.Mage,
+        bc.UnitType.Healer
+    ]
+
     unit_information = {
         'current_amount': {
             'worker': 0,
