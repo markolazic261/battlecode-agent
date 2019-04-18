@@ -116,6 +116,7 @@ class Mage(units.Unit):
         def action(self):
             enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
             mage = self.__outer.unit()
+            enemies_map = self.__outer._maps['enemy_units_map']
 
             if not enemy:
                 self._status = bt.Status.FAIL
@@ -123,6 +124,16 @@ class Mage(units.Unit):
                 if self.__outer._gc.is_attack_ready(mage.id) and self.__outer._gc.can_attack(mage.id, enemy.id):
                     self.__outer._gc.attack(mage.id, enemy.id)
                     self._status = bt.Status.SUCCESS
+
+                     # Remove enemy from enemy_units_map if it died
+                    enemy_location = enemy.location.map_location()
+                    for dir in list(bc.Direction):
+                        adjacent_location = enemy_location.add(dir)
+                        if adjacent_location.x < 0 or adjacent_location.x >= len(enemies_map) or adjacent_location.y < 0 or adjacent_location.y >= len(enemies_map[0]):
+                            continue
+                        if not self.__outer._gc.has_unit_at_location(adjacent_location) or self.__outer._gc.sense_unit_at_location(adjacent_location).team == mage.team:
+                            enemies_map[adjacent_location.x][adjacent_location.y] = None
+
                 else:
                     self._status = bt.Status.RUNNING
 

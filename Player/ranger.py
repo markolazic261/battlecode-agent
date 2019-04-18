@@ -6,9 +6,10 @@ import units
 
 class Ranger(units.Unit):
     """The container for the ranger unit."""
-    def __init__(self, unit, gc):
+    def __init__(self, unit, gc, maps):
         super().__init__(unit, gc)
         self._targeted_enemy = None
+        self._maps = maps
 
     def generate_tree(self):
         """Generates the tree for the ranger."""
@@ -114,6 +115,7 @@ class Ranger(units.Unit):
         def action(self):
             enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
             ranger = self.__outer.unit()
+            enemies_map = self.__outer._maps['enemy_units_map']
 
             if not enemy:
                 self._status = bt.Status.FAIL
@@ -121,6 +123,18 @@ class Ranger(units.Unit):
                 if self.__outer._gc.is_attack_ready(ranger.id) and self.__outer._gc.can_attack(ranger.id, enemy.id):
                     self.__outer._gc.attack(ranger.id, enemy.id)
                     self._status = bt.Status.SUCCESS
+                     # Remove enemy from enemy_units_map if it died
+                    location = ranger.location.map_location()
+                    enemy_team = bc.Team.Red if ranger.team == bc.Team.Blue else bc.Team.Blue
+                    killed_enemy = True
+                    nearby_units = self.__outer._gc.sense_nearby_units_by_team(location, ranger.attack_range(), enemy_team)
+                    for nearby_unit in nearby_units:
+                        if nearby_unit.id == enemy.id:
+                            killed_enemy = False
+                            break
+                    if killed_enemy:
+                        enemy_location = enemy.location.map_location()
+                        enemies_map[enemy_location.x][enemy_location.y] = None
                 else:
                     self._status = bt.Status.RUNNING
 

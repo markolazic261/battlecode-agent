@@ -105,7 +105,8 @@ class Factory(units.Unit):
                         elif unit.unit_type == bc.UnitType.Ranger:
                             self.__outer._my_units.append(Ranger(
                                 unit.id,
-                                self.__outer._gc
+                                self.__outer._gc,
+                                self.__outer._maps
                             ))
                         elif unit.unit_type == bc.UnitType.Mage:
                             self.__outer._my_units.append(Mage(

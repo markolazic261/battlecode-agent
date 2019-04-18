@@ -74,7 +74,6 @@ class Knight(units.Unit):
             enemy_team = bc.Team.Red if team == bc.Team.Blue else bc.Team.Blue
 
             nearby_units = self.__outer._gc.sense_nearby_units_by_team(location, range, enemy_team)
-
             # No enemy visible
             if not nearby_units:
                 return False
@@ -230,6 +229,10 @@ class Knight(units.Unit):
                     enemy = enemies_map[x][y]
                     if enemy:
                         current_distance = knight_location.distance_squared_to(enemy.location.map_location())
+
+                        # check just in case enemy desingregated its unit or we failed to attack for any reason
+                        if current_distance < knight.vision_range:
+                            continue
                         if current_distance < min_distance:
                             min_distance = current_distance
                             closest_unit_location = enemy.location.map_location()
@@ -253,9 +256,8 @@ class Knight(units.Unit):
             terrain_map = self.__outer._maps['terrain_map']
             my_units_map = self.__outer._maps['my_units_map']
             path = astar.astar(terrain_map, my_units_map, knight.location.map_location(), location, max_path_length=5)
-            if len(path) == 1:
-                print(knight.location.map_location(), location)
-            if len(path) > 3:
+
+            if len(path) > 0:
                 path.pop(0) # Remove the point the unit is already on.
                 self.__outer._path_to_follow = path
                 self._status = bt.Status.SUCCESS
