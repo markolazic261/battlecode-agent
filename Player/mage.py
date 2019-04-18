@@ -78,6 +78,8 @@ class Mage(units.Unit):
                 # Get the amount of enemies adjacent to this one.
                 for dir in list(bc.Direction):
                     adjacent_location = enemy_location.add(dir)
+                    if adjacent_location.x < 0 or adjacent_location.x >= len(my_units_map) or adjacent_location.y < 0 or adjacent_location.y >= len(my_units_map[0]):
+                        continue
                     if self.__outer._gc.has_unit_at_location(adjacent_location) and not my_units_map[adjacent_location.x][adjacent_location.y]:
                         current_target_nr_enemies += 1
                         current_target_hp += self.__outer._gc.sense_unit_at_location(adjacent_location).health
