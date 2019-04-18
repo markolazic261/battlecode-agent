@@ -23,11 +23,16 @@ class Knight(units.Unit):
         attack = self.Attack(self)
         enemy_attack.add_child(enemy_adjacent)
         enemy_attack.add_child(attack)
-        enemy_chase = bt.Sequence()
+        enemy_javelin = bt.Sequence()
+        enemy_javelin.add_child(self.CanJavelin(self))
+        enemy_javelin.add_child(self.Javelin(self))
         move_towards_enemy = self.MoveTowardsEnemy(self)
+        enemy_javelin.add_child(move_towards_enemy)
+        enemy_chase = bt.Sequence()
         enemy_chase.add_child(move_towards_enemy)
         enemy_chase.add_child(enemy_attack)
         enemy_fallback.add_child(enemy_attack)
+        enemy_fallback.add_child(enemy_javelin)
         enemy_fallback.add_child(enemy_chase)
         enemy_handling.add_child(enemy_visible)
         enemy_handling.add_child(enemy_fallback)
@@ -110,6 +115,57 @@ class Knight(units.Unit):
                         self.__outer._targeted_enemy = None
                 else:
                     self._status = bt.Status.RUNNING
+
+    class CanJavelin(bt.Condition):
+        """ Check if knight can perform javelin attack """
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def condition(self):
+            unit = self.__outer.unit()
+            if unit.research_level < 3:
+                return False
+            enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
+
+            if not enemy:
+                return False
+
+            distance = unit.location.map_location().distance_squared_to(enemy.location.map_location())
+
+            return distance <= unit.ability_range()
+
+
+    class Javelin(bt.Action):
+        """ Javelin """
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def action(self):
+            enemy = self.__outer.get_enemy_unit(self.__outer._targeted_enemy)
+            unit = self.__outer.unit()
+
+            if not enemy:
+                self._status = bt.Status.FAIL
+            else:
+                if self.__outer._gc.is_javelin_ready(unit.id) and self.__outer._gc.can_javelin(unit.id, enemy.id):
+                    self.__outer._gc.javelin(unit.id, enemy.id)
+                    self._status = bt.Status.SUCCESS
+
+                    # Remove targeted enemy if it died
+                    location = unit.location.map_location()
+                    killed_enemy = True
+                    nearby_units = self.__outer._gc.sense_nearby_units(location, unit.vision_range)
+                    for nearby_unit in nearby_units:
+                        if nearby_unit.id == enemy.id:
+                            killed_enemy = False
+                            break
+                    if killed_enemy:
+                        self.__outer._targeted_enemy = None
+                else:
+                    self._status = bt.Status.RUNNING
+
 
     class MoveTowardsEnemy(bt.Action):
         """Moves in the direction of the visible enemy."""

@@ -12,8 +12,9 @@ class Strategy:
         bc.UnitType.Healer,
         bc.UnitType.Ranger,
         bc.UnitType.Mage,
-        bc.UnitType.Ranger,
+        bc.UnitType.Knight,
         bc.UnitType.Mage,
+        bc.UnitType.Knight,
         bc.UnitType.Healer
     ]
 

@@ -83,7 +83,7 @@ class Mage(units.Unit):
                         current_target_hp += self.__outer._gc.sense_unit_at_location(adjacent_location).health
                     elif my_units_map[adjacent_location.x][adjacent_location.y]:
                         current_target_nr_enemies -= 1
-                        current_target_hp += 2*self._outer._gc.sense_unit_at_location(adjacent_location).health
+                        current_target_hp += 2*self.__outer._gc.sense_unit_at_location(adjacent_location).health
 
                 # Update best target if more enemies were found.
                 if current_target_nr_enemies > best_target_nr_enemies:
