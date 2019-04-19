@@ -93,6 +93,34 @@ def init_maps():
             enemy_units_map[x].append(None)
             my_units_map[x].append(None)
 
+def remove_unreachable_karbonite():
+    units = gc.my_units()
+    map = gc.starting_map(gc.planet())
+    map_reachable = [[False]*map_height for i in range(map_width)]
+    directions = [dir for dir in bc.Direction if dir is not bc.Direction.Center]
+    for unit in units:
+        unit_location = unit.location.map_location()
+        neighbours = []
+        if not map_reachable[unit_location.x][unit_location.y]:
+            neighbours.append(unit_location)
+        while neighbours:
+            location = neighbours.pop(0)
+            if map_reachable[location.x][location.y]:
+                continue
+            map_reachable[location.x][location.y] = True
+
+            for dir in directions:
+                adjacent_location = location.add(dir)
+                # check if out of bound
+                if adjacent_location.x < 0 or adjacent_location.x >= len(map_reachable) or adjacent_location.y < 0 or adjacent_location.y >= len(map_reachable[0]):
+                    continue
+                if terrain_map[adjacent_location.x][adjacent_location.y] and not map_reachable[adjacent_location.x][adjacent_location.x]:
+                    neighbours.append(adjacent_location)
+    for x in range(len(map_reachable)):
+        for y in range(len(map_reachable[0])):
+            if not map_reachable[x][y]:
+                karbonite_map[x][y] = 0
+
 
 def remove_dead_units():
     my_units[:] = [unit for unit in my_units if unit.unit()]
@@ -101,6 +129,7 @@ def remove_dead_units():
 if gc.planet() == bc.Planet.Earth:
     init_maps()
     init_workers()
+    remove_unreachable_karbonite()
     for research in strategy.Strategy.research_strategy:
         gc.queue_research(research)
 while True:
