@@ -116,7 +116,7 @@ def remove_unreachable_karbonite():
                 # check if out of bound
                 if adjacent_location.x < 0 or adjacent_location.x >= len(map_reachable) or adjacent_location.y < 0 or adjacent_location.y >= len(map_reachable[0]):
                     continue
-                if terrain_map[adjacent_location.x][adjacent_location.y] and not map_reachable[adjacent_location.x][adjacent_location.x]:
+                if terrain_map[adjacent_location.x][adjacent_location.y] and not map_reachable[adjacent_location.x][adjacent_location.y]:
                     neighbours.append(adjacent_location)
     for x in range(len(map_reachable)):
         for y in range(len(map_reachable[0])):
