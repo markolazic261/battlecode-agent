@@ -4,7 +4,7 @@ import random
 import units
 import math
 import astar
-
+import strategy
 
 class Ranger(units.Unit):
     """The container for the ranger unit."""
@@ -53,6 +53,7 @@ class Ranger(units.Unit):
 
         move_fallback = bt.FallBack()
         move_sequence = bt.Sequence()
+        move_sequence.add_child(self.OffensiveStrategy(self))
         move_sequence.add_child(self.FindClosestEnemy(self))
         move_sequence.add_child(self.CreatePath(self))
         move_sequence.add_child(self.MoveOnPath(self))
@@ -217,12 +218,22 @@ class Ranger(units.Unit):
                 else:
                     self._status = bt.Status.FAIL
 
+    class OffensiveStrategy(bt.Condition):
+        """Moves towards the enemy."""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def condition(self):
+            return strategy.Strategy.getInstance().battle_strategy == strategy.BattleStrategy.Offensive
+
     class FindClosestEnemy(bt.Action):
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def action(self):
+            print('Ranger finding enemy')
             ranger = self.__outer.unit()
             ranger_location = ranger.location.map_location()
             enemies_map = self.__outer._maps['enemy_units_map']

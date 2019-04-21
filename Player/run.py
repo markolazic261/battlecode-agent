@@ -7,6 +7,7 @@ import astar
 from worker import Worker
 from knight import Knight
 import strategy
+import math
 import time
 
 gc = bc.GameController()
@@ -116,12 +117,156 @@ def remove_unreachable_karbonite():
                 # check if out of bound
                 if adjacent_location.x < 0 or adjacent_location.x >= len(map_reachable) or adjacent_location.y < 0 or adjacent_location.y >= len(map_reachable[0]):
                     continue
-                if terrain_map[adjacent_location.x][adjacent_location.y] and not map_reachable[adjacent_location.x][adjacent_location.x]:
+                if terrain_map[adjacent_location.x][adjacent_location.y] and not map_reachable[adjacent_location.x][adjacent_location.y]:
                     neighbours.append(adjacent_location)
     for x in range(len(map_reachable)):
         for y in range(len(map_reachable[0])):
             if not map_reachable[x][y]:
                 karbonite_map[x][y] = 0
+                terrain_map[x][y] = False
+
+
+def is_narrow_point(location):
+    upFree = 3
+    for i in range(1,4):
+        upLocation = location.translate(0,i)
+        if not location_in_bounds(upLocation, terrain_map) or not terrain_map[upLocation.x][upLocation.y]:
+            upFree = i - 1
+            break
+
+    downFree = 3
+    for i in range(1,4):
+        downLocation = location.translate(0,-i)
+        if not location_in_bounds(downLocation, terrain_map) or not terrain_map[downLocation.x][downLocation.y]:
+            downFree = i - 1
+            break
+
+    leftFree = 3
+    for i in range(1,4):
+        leftLocation = location.translate(-i,0)
+        if not location_in_bounds(leftLocation, terrain_map) or not terrain_map[leftLocation.x][leftLocation.y]:
+            leftFree = i - 1
+            break
+
+    rightFree = 3
+    for i in range(1,4):
+        rightLocation = location.translate(i,0)
+        if not location_in_bounds(rightLocation, terrain_map) or not terrain_map[rightLocation.x][rightLocation.y]:
+            rightFree = i - 1
+            break
+
+    return (upFree + downFree) < 2 or (leftFree + rightFree) < 2
+
+
+def location_in_bounds(location, map):
+    return location.x >= 0 and location.x < len(map) and location.y >= 0 and location.y < len(map[0])
+
+
+def find_choke_points():
+    width = len(terrain_map)
+    height = len(terrain_map[0])
+    map = gc.starting_map(gc.planet())
+    my_start_workers = gc.my_units()
+    enemy_start_workers = [worker for worker in map.initial_units if worker not in my_start_workers]
+
+    paths = []
+    for worker in my_start_workers:
+        for enemy_worker in enemy_start_workers:
+            my_worker_location = worker.location.map_location()
+            enemy_worker_location = enemy_worker.location.map_location()
+            astar_path = astar.astar(terrain_map, my_units_map, my_worker_location, enemy_worker_location)
+            if len(astar_path) > 0:
+                paths.append(astar_path)
+
+    choke_points = []
+    paths_length = 0
+    for path in paths:
+        paths_length += len(path)
+        for location in path:
+            if is_narrow_point(location) and location not in choke_points:
+                choke_points.append(location)
+
+    return choke_points, paths_length / len(paths)
+
+def update_strategy():
+    min_amount_for_offense = strategy.Strategy.getInstance().min_nr_units_for_offense
+    current_amount = strategy.Strategy.getInstance().getNumberCurrentUnits()
+
+    if min_amount_for_offense and current_amount >= min_amount_for_offense:
+        strategy.Strategy.getInstance().setBattleStrategy(strategy.BattleStrategy.Offensive)
+
+def init_strategy():
+    width = len(terrain_map)
+    height = len(terrain_map[0])
+    choke_points, average_path_length = find_choke_points()
+    map_area =  width*height
+    print(len(choke_points), average_path_length, map_area)
+
+    nr_impassable = 0
+    for x in range(width):
+        for y in range(height):
+            if not terrain_map[x][y]:
+                nr_impassable += 1
+
+    impassable_per = 100 *nr_impassable / map_area
+
+    print(impassable_per)
+
+    if len(choke_points) > 5:
+        print('A lot of choke points, we need more rangers')
+        if map_area >= 800 and impassable_per > 20:
+            print('play Deffensive')
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Deffensive
+            strategy.Strategy.getInstance().setMaxUnit(
+                {
+                    'worker': 3,
+                    'factory': 5,
+                    'healer': 5,
+                    'knight': 5,
+                    'mage': 5,
+                    'ranger': 50
+                }
+            )
+        else:
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
+            print('play aggresive')
+            strategy.Strategy.getInstance().setMaxUnit(
+                {
+                    'worker': 3,
+                    'factory': 5,
+                    'healer': 5,
+                    'knight': 5,
+                    'mage': 20,
+                    'ranger': 30
+                }
+            )
+    elif len(choke_points) > 1:
+        print('There are some choke points, we need some more  rangers')
+        if map_area >= 800 and average_path_length > 50:
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Deffensive
+            strategy.Strategy.getInstance().setMinUnitsOffense(20)
+            print('Wait with aggresion unit we make some units')
+        else:
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
+            print('play aggresive from start')
+    else:
+        if map_area >= 800:
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Deffensive
+            strategy.Strategy.getInstance().setMinUnitsOffense(20)
+            strategy.Strategy.getInstance().setMaxUnit(
+                {
+                    'worker': 3,
+                    'factory': 5,
+                    'healer': 5,
+                    'knight': 10,
+                    'mage': 10,
+                    'ranger': 30
+                }
+            )
+            print('Wait with aggresion unit we make some units and make some more rangers')
+        else:
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
+            print('play aggresive from start with regular unnits')
 
 
 def remove_dead_units():
@@ -132,6 +277,7 @@ if gc.planet() == bc.Planet.Earth:
     init_maps()
     init_workers()
     remove_unreachable_karbonite()
+    init_strategy()
     for research in strategy.Strategy.research_strategy:
         gc.queue_research(research)
 while True:
@@ -143,6 +289,7 @@ while True:
             remove_dead_units()
             update_enemy_units_map(units)
             update_my_units_map(units)
+            update_strategy()
             for unit in my_units:
                 if unit.unit():
                     unit.run()

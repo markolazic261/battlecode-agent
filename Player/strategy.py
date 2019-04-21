@@ -1,8 +1,18 @@
 import battlecode as bc
+from enum import Enum
+
+
+class BattleStrategy(Enum):
+    Deffensive = 0
+    Offensive = 1
+
 
 class Strategy:
     __instance = None
 
+
+    battle_strategy = None
+    min_nr_units_for_offense = None
 
     research_strategy = [
         bc.UnitType.Worker,
@@ -45,6 +55,12 @@ class Strategy:
         }
     }
 
+    def setBattleStrategy(self, strategy):
+        self.battle_strategy = strategy
+
+    def setMinUnitsOffense(self, nr_of_units):
+        self.min_nr_units_for_offense = nr_of_units
+
     def resetCurrentUnits(self):
         """Resets the information regarding what units currently exist."""
         self.unit_information['current_amount'] = {
@@ -55,6 +71,9 @@ class Strategy:
             'mage': 0,
             'ranger': 0
         }
+
+    def setMaxUnit(self,max_amount):
+        self.unit_information['max_amount'] = max_amount
 
 
     def addUnit(self, unitType):
@@ -136,6 +155,13 @@ class Strategy:
         elif unitType == bc.UnitType.Ranger:
             return self.unit_information['max_amount']['ranger']
 
+    def getNumberCurrentUnits(self):
+        nr_of_units = 0
+
+        for unitType in self.unit_information['current_amount']:
+            if unitType is not bc.UnitType.Factory and unitType is not bc.UnitType.Worker:
+                nr_of_units += self.unit_information['current_amount'][unitType]
+        return nr_of_units
 
     def unitNeeded(self):
         """Determines the unit which a factory should build depending on

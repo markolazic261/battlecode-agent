@@ -4,6 +4,7 @@ import random
 import units
 import math
 import astar
+import strategy
 
 
 class Mage(units.Unit):
@@ -28,6 +29,7 @@ class Mage(units.Unit):
 
         move_fallback = bt.FallBack()
         move_sequence = bt.Sequence()
+        move_sequence.add_child(self.OffensiveStrategy(self))
         move_sequence.add_child(self.FindClosestEnemy(self))
         move_sequence.add_child(self.CreatePath(self))
         move_sequence.add_child(self.MoveOnPath(self))
@@ -150,12 +152,24 @@ class Mage(units.Unit):
 
 
 
+    class OffensiveStrategy(bt.Condition):
+        """Moves towards the enemy."""
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def condition(self):
+            return strategy.Strategy.battle_strategy == strategy.BattleStrategy.Offensive
+
+
+
     class FindClosestEnemy(bt.Action):
         def __init__(self, outer):
             super().__init__()
             self.__outer = outer
 
         def action(self):
+            print('Mage finding enemy')
             mage = self.__outer.unit()
             mage_location = mage.location.map_location()
             enemies_map = self.__outer._maps['enemy_units_map']
