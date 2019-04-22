@@ -230,7 +230,6 @@ class Knight(units.Unit):
             self.__outer = outer
 
         def action(self):
-            print('Knight finding enemy')
             knight = self.__outer.unit()
             knight_location = knight.location.map_location()
             enemies_map = self.__outer._maps['enemy_units_map']

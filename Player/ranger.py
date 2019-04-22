@@ -233,7 +233,6 @@ class Ranger(units.Unit):
             self.__outer = outer
 
         def action(self):
-            print('Ranger finding enemy')
             ranger = self.__outer.unit()
             ranger_location = ranger.location.map_location()
             enemies_map = self.__outer._maps['enemy_units_map']

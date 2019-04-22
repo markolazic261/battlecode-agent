@@ -169,7 +169,6 @@ class Mage(units.Unit):
             self.__outer = outer
 
         def action(self):
-            print('Mage finding enemy')
             mage = self.__outer.unit()
             mage_location = mage.location.map_location()
             enemies_map = self.__outer._maps['enemy_units_map']

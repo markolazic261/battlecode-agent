@@ -53,10 +53,6 @@ def astar(maze,friendly_units, start, end, max_path_length=math.inf):
         open_list.pop(current_index)
         closed_list.append(current_node)
 
-        #print('Current node: ', current_node.position)
-        #print('Open list: ',[p.position for p in open_list])
-        #print('Closed list: ', [p.position for p in closed_list])
-
         # Found the goal
         if current_node == end_node or current_node.g > max_path_length :
             path = []

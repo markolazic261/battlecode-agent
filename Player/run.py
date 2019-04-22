@@ -200,7 +200,6 @@ def init_strategy():
     height = len(terrain_map[0])
     choke_points, average_path_length = find_choke_points()
     map_area =  width*height
-    print(len(choke_points), average_path_length, map_area)
 
     nr_impassable = 0
     for x in range(width):
@@ -210,12 +209,11 @@ def init_strategy():
 
     impassable_per = 100 *nr_impassable / map_area
 
-    print(impassable_per)
 
     if len(choke_points) > 5:
-        print('A lot of choke points, we need more rangers')
+        # A lot of choke points, we need more rangers
         if map_area >= 800 and impassable_per > 20:
-            print('play Deffensive')
+            # play Deffensive
             strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Deffensive
             strategy.Strategy.getInstance().setMaxUnit(
                 {
@@ -229,7 +227,7 @@ def init_strategy():
             )
         else:
             strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
-            print('play aggresive')
+            # play aggresive
             strategy.Strategy.getInstance().setMaxUnit(
                 {
                     'worker': 3,
@@ -241,14 +239,14 @@ def init_strategy():
                 }
             )
     elif len(choke_points) > 1:
-        print('There are some choke points, we need some more  rangers')
+        # There are some choke points, we need some more  rangers
         if map_area >= 800 and average_path_length > 50:
             strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Deffensive
             strategy.Strategy.getInstance().setMinUnitsOffense(20)
-            print('Wait with aggresion unit we make some units')
+            # Wait with aggresion unit we make some units
         else:
             strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
-            print('play aggresive from start')
+            # play aggresive from start
     else:
         if map_area >= 800:
             strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Deffensive
@@ -263,10 +261,10 @@ def init_strategy():
                     'ranger': 30
                 }
             )
-            print('Wait with aggresion unit we make some units and make some more rangers')
+            # Wait with aggresion unit we make some units and make some more rangers
         else:
             strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
-            print('play aggresive from start with regular unnits')
+            # play aggresive from start with regular unnits
 
 
 def remove_dead_units():
