@@ -186,7 +186,11 @@ def find_choke_points():
             if is_narrow_point(location) and location not in choke_points:
                 choke_points.append(location)
 
-    return choke_points, paths_length / len(paths)
+    average_path_length = 0
+    if len(paths) > 0:
+        average_path_length = paths_length / len(paths)
+
+    return choke_points,  average_path_length
 
 def update_strategy():
     min_amount_for_offense = strategy.Strategy.getInstance().min_nr_units_for_offense
