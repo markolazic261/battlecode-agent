@@ -222,7 +222,7 @@ class Knight(units.Unit):
             self.__outer = outer
 
         def condition(self):
-            return strategy.Strategy.battle_strategy == strategy.BattleStrategy.Offensive
+            return strategy.Strategy.getInstance().battle_strategy == strategy.BattleStrategy.Offensive
 
     class FindClosestEnemy(bt.Action):
         def __init__(self, outer):
