@@ -213,62 +213,112 @@ def init_strategy():
 
     impassable_per = 100 *nr_impassable / map_area
 
-
-    if len(choke_points) > 5:
+    if average_path_length == 0:
+        # no path between inital units, spam rangers (only mirror)
+        strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
+        strategy.Strategy.getInstance().setMaxUnit(
+            {
+                'worker': 2,
+                'factory': 2,
+                'knight': 1,
+                'mage': 1,
+                'ranger': 50,
+                'healer': 10
+            }
+        )
+    elif average_path_length < 5:
+        strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
+        strategy.Strategy.getInstance().enemy_start_close = True
+        # play aggresive from start with regular unnits
+        strategy.Strategy.getInstance().setMaxUnit(
+            {
+                'worker': 1,
+                'factory': 2,
+                'knight': 75,
+                'mage': 5,
+                'ranger': 15,
+                'healer': 5
+            }
+        )
+    elif len(choke_points) > 5:
         # A lot of choke points, we need more rangers
         if map_area >= 800 and impassable_per > 20:
-            # play Deffensive
+            # play Defensive
             strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Deffensive
             strategy.Strategy.getInstance().setMaxUnit(
                 {
                     'worker': 3,
                     'factory': 5,
-                    'healer': 5,
                     'knight': 5,
-                    'mage': 5,
-                    'ranger': 50
+                    'mage': 10,
+                    'ranger': 75,
+                    'healer': 10
+                }
+            )
+        elif map_area < 800:
+            # play aggresive with less factories
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
+            strategy.Strategy.getInstance().setMaxUnit(
+                {
+                    'worker': 3,
+                    'factory': 3,
+                    'knight': 10,
+                    'mage': 10,
+                    'ranger': 30,
+                    'healer': 5
                 }
             )
         else:
-            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
             # play aggresive
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
             strategy.Strategy.getInstance().setMaxUnit(
                 {
                     'worker': 3,
                     'factory': 5,
-                    'healer': 5,
                     'knight': 5,
                     'mage': 20,
-                    'ranger': 30
+                    'ranger': 30,
+                    'healer': 5
                 }
             )
     elif len(choke_points) > 1:
         # There are some choke points, we need some more  rangers
         if map_area >= 800 and average_path_length > 50:
+            # Wait with aggresion unit we make some units
             strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Deffensive
             strategy.Strategy.getInstance().setMinUnitsOffense(20)
-            # Wait with aggresion unit we make some units
         else:
-            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
             # play aggresive from start
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
     else:
         if map_area >= 800:
+            # Wait with aggresion unit we make some units and make some more rangers
             strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Deffensive
             strategy.Strategy.getInstance().setMinUnitsOffense(20)
             strategy.Strategy.getInstance().setMaxUnit(
                 {
-                    'worker': 3,
+                    'worker': 2,
                     'factory': 5,
-                    'healer': 5,
-                    'knight': 10,
-                    'mage': 10,
-                    'ranger': 30
+                    'knight': 15,
+                    'mage': 5,
+                    'ranger': 10,
+                    'healer': 5
                 }
             )
-            # Wait with aggresion unit we make some units and make some more rangers
         else:
-            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
             # play aggresive from start with regular unnits
+            strategy.Strategy.getInstance().battle_strategy = strategy.BattleStrategy.Offensive
+            strategy.Strategy.getInstance().setMaxUnit(
+                {
+                    'worker': 1,
+                    'factory': 2,
+                    'knight': 10,
+                    'mage': 2,
+                    'ranger': 3,
+                    'healer': 2
+                }
+            )
+
 
 
 def remove_dead_units():
@@ -292,6 +342,7 @@ while True:
             update_enemy_units_map(units)
             update_my_units_map(units)
             update_strategy()
+            random.shuffle(my_units)
             for unit in my_units:
                 if unit.unit():
                     unit.run()

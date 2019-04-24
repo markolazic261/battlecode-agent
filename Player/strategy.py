@@ -13,6 +13,7 @@ class Strategy:
 
     battle_strategy = None
     min_nr_units_for_offense = None
+    enemy_start_close = False
 
     research_strategy = [
         bc.UnitType.Worker,
@@ -32,26 +33,26 @@ class Strategy:
         'current_amount': {
             'worker': 0,
             'factory': 0,
-            'healer': 0,
             'knight': 0,
             'mage': 0,
-            'ranger': 0
+            'ranger': 0,
+            'healer': 0
         },
         'max_amount': {
             'worker': 3,
             'factory': 5,
-            'healer': 5,
             'knight': 25,
             'mage': 10,
-            'ranger': 15
+            'ranger': 15,
+            'healer': 5
         },
         'in_production': {
             'worker': 0,
             'factory': 0,
-            'healer': 0,
             'knight': 0,
             'mage': 0,
-            'ranger': 0
+            'ranger': 0,
+            'healer': 0
         }
     }
 
@@ -66,10 +67,10 @@ class Strategy:
         self.unit_information['current_amount'] = {
             'worker': 0,
             'factory': 0,
-            'healer': 0,
             'knight': 0,
             'mage': 0,
-            'ranger': 0
+            'ranger': 0,
+            'healer': 0
         }
 
     def setMaxUnit(self,max_amount):

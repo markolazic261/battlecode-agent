@@ -67,6 +67,7 @@ class Worker(units.Unit):
         no_adj_karbonite_sequence.add_child(path_fallback)
 
         karbonite.add_child(adjacent_karbonite_sequence)
+        karbonite.add_child(self.CloseCombat(self))
         karbonite.add_child(no_adj_karbonite_sequence)
         karbonite.add_child(self.MoveRandomly(self))
         tree.add_child(karbonite)
@@ -305,6 +306,15 @@ class Worker(units.Unit):
                     self._status = bt.Status.SUCCESS
                 else:
                     self._status = bt.Status.RUNNING
+
+
+    class CloseCombat(bt.Condition):
+        def __init__(self, outer):
+            super().__init__()
+            self.__outer = outer
+
+        def condition(self):
+            return strategy.Strategy.getInstance().getCurrentUnit(bc.UnitType.Factory) == 0 and strategy.Strategy.getInstance().enemy_start_close
 
     class KarboniteExists(bt.Condition):
         """Check if there is any karbonite left on the map."""
